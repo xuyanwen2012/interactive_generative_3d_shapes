@@ -551,32 +551,32 @@ THREE.OrbitControls = function (object, domElement) {
     //console.log( 'handleKeyDown' );
 
     // prevent the browser from scrolling on cursor up/down
-
-    event.preventDefault();
-
-    switch (event.keyCode) {
-
-      case scope.keys.UP:
-        pan(0, scope.keyPanSpeed);
-        scope.update();
-        break;
-
-      case scope.keys.BOTTOM:
-        pan(0, -scope.keyPanSpeed);
-        scope.update();
-        break;
-
-      case scope.keys.LEFT:
-        pan(scope.keyPanSpeed, 0);
-        scope.update();
-        break;
-
-      case scope.keys.RIGHT:
-        pan(-scope.keyPanSpeed, 0);
-        scope.update();
-        break;
-
-    }
+    //
+    // event.preventDefault();
+    //
+    // switch (event.keyCode) {
+    //
+    //   case scope.keys.UP:
+    //     pan(0, scope.keyPanSpeed);
+    //     scope.update();
+    //     break;
+    //
+    //   case scope.keys.BOTTOM:
+    //     pan(0, -scope.keyPanSpeed);
+    //     scope.update();
+    //     break;
+    //
+    //   case scope.keys.LEFT:
+    //     pan(scope.keyPanSpeed, 0);
+    //     scope.update();
+    //     break;
+    //
+    //   case scope.keys.RIGHT:
+    //     pan(-scope.keyPanSpeed, 0);
+    //     scope.update();
+    //     break;
+    //
+    // }
 
   }
 
@@ -919,10 +919,9 @@ THREE.OrbitControls = function (object, domElement) {
 
   function onContextMenu(event) {
 
-    if (scope.enabled === false) return;
+    if (scope.enabled === false)
 
-    event.preventDefault();
-
+    // event.preventDefault();
   }
 
   //

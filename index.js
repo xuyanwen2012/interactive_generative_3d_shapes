@@ -1,8 +1,16 @@
+'use strict';
+
 let camera, scene, renderer;
 
 const loader = new THREE.OBJLoader();
 
 init();
+
+
+class Demo {
+
+}
+
 
 function init() {
   // Scene
@@ -32,6 +40,7 @@ function init() {
   // OBJ
   loader.load('./models/1abeca7159db7ed9f200a72c9245aee7.obj', (obj) => {
     scene.add(obj);
+    obj.material = new THREE.MeshNormalMaterial();
     render();
   });
 
@@ -39,7 +48,6 @@ function init() {
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.addEventListener('change', render);
   controls.target.set(0, 0, 0);
-  // controls.target.set(0, 1.2, 2);
   controls.update();
 
   window.addEventListener('resize', onWindowResize, false);
