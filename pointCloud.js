@@ -2,6 +2,19 @@ const pointSize = 0.05;
 const width = 80;
 const length = 160;
 
+/**
+ * @param geo {THREE}
+ */
+function generateGeoPointCloud(geo) {
+  // const geometry = new THREE.BufferGeometry();
+  // const numPoints geo.
+  // const positions = new Float32Array(numPoints * 3);
+  // const colors = new Float32Array(numPoints * 3);
+
+
+}
+
+
 function generatePointCloudGeometry(color, width, length) {
   const geometry = new THREE.BufferGeometry();
   const numPoints = width * length;

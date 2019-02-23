@@ -6,9 +6,27 @@ const loader = new THREE.OBJLoader();
 
 init();
 
+/**
+ * @param object {THREE.Object3D}
+ * @constructor
+ */
+function OnObjLoad(object) {
+  let mesh = object.children[0];
+  mesh.material = new THREE.MeshNormalMaterial();
+  scene.add(object);
 
-class Demo {
+  let geo = mesh.geometry;
 
+  let vnh = new THREE.VertexNormalsHelper(mesh, 0.05);
+  scene.add(vnh);
+
+  let box = new THREE.BoxHelper(object, 0xffff00);
+  scene.add(box);
+
+  console.log(geo);
+  console.log(geo.attributes.position);
+
+  render();
 }
 
 
@@ -38,11 +56,7 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   // OBJ
-  loader.load('./models/1abeca7159db7ed9f200a72c9245aee7.obj', (obj) => {
-    scene.add(obj);
-    obj.material = new THREE.MeshNormalMaterial();
-    render();
-  });
+  loader.load('./models/1abeca7159db7ed9f200a72c9245aee7.obj', OnObjLoad);
 
   // Control
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
