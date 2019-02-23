@@ -44,10 +44,10 @@ function init() {
   // }
   // readJSON('./models/_index.json');
   loadModel('./models/1abeca7159db7ed9f200a72c9245aee7.obj');
-  loadModel('./models/1acfbda4ce0ec524bedced414fad522f.obj', new THREE.Vector3(2, 0, 0));
-  loadModel('./models/1ae530f49a914595b491214a0cc2380.obj', new THREE.Vector3(4, 0, 0));
-  loadModel('./models/1aef0af3cdafb118c6a40bdf315062da.obj', new THREE.Vector3(-2, 0, 0));
-  loadModel('./models/1b5b5a43e0281030b96212c8f6cd06e.obj', new THREE.Vector3(-4, 0, 0));
+  // loadModel('./models/1acfbda4ce0ec524bedced414fad522f.obj', new THREE.Vector3(2, 0, 0));
+  // loadModel('./models/1ae530f49a914595b491214a0cc2380.obj', new THREE.Vector3(4, 0, 0));
+  // loadModel('./models/1aef0af3cdafb118c6a40bdf315062da.obj', new THREE.Vector3(-2, 0, 0));
+  // loadModel('./models/1b5b5a43e0281030b96212c8f6cd06e.obj', new THREE.Vector3(-4, 0, 0));
 
   window.addEventListener('resize', onWindowResize, false);
   document.addEventListener('mousemove', onDocumentMouseMove, false);
@@ -74,7 +74,10 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
 
     points.position.set(pos.x, pos.y, pos.z);
 
-    let box = new THREE.BoxHelper(group, 0xffff00);
+    // let box = new THREE.BoxHelper(group, 0xffff00);
+    // scene.add(box);
+
+    let box = new BoundingBox(group, 0xffff00);
     scene.add(box);
 
     render();
