@@ -26,6 +26,23 @@ function init() {
   scene = new AppScene();
 
   // OBJ
+  // function readJSON(path) {
+  //   const xhr = new XMLHttpRequest();
+  //   xhr.open('GET', path, true);
+  //   xhr.responseType = 'json';
+  //   xhr.onload = (e) => {
+  //     if (e.status === 200) {
+  //       const file = new File([this.response], '_index.json');
+  //       const fileReader = new FileReader();
+  //       fileReader.addEventListener('load', () => {
+  //         console.log(file);
+  //       });
+  //       fileReader.readAsText(file);
+  //     }
+  //   };
+  //   xhr.send();
+  // }
+  // readJSON('./models/_index.json');
   loadModel('./models/1abeca7159db7ed9f200a72c9245aee7.obj');
   loadModel('./models/1acfbda4ce0ec524bedced414fad522f.obj', new THREE.Vector3(2, 0, 0));
   loadModel('./models/1ae530f49a914595b491214a0cc2380.obj', new THREE.Vector3(4, 0, 0));

@@ -15,9 +15,11 @@ function generatePointCloudFromGeo(color, geo) {
     positions[3 * i + 1] = geo.attributes.position.array[3 * i + 1];
     positions[3 * i + 2] = geo.attributes.position.array[3 * i + 2];
 
-    colors[3 * i] = color.r;
-    colors[3 * i + 1] = color.g;
-    colors[3 * i + 2] = color.b;
+    const y = positions[3 * i + 1];
+    const intensity = (y + 0.1) * 0.75;
+    colors[3 * i] = color.r * intensity;
+    colors[3 * i + 1] = color.g * intensity;
+    colors[3 * i + 2] = color.b * intensity;
   }
 
   console.log(numPoints);
