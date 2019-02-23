@@ -29,8 +29,13 @@ function OnObjLoad(object) {
   render();
 }
 
+function initGUI() {
+  const gui = new dat.GUI();
+}
 
 function init() {
+  initGUI();
+
   // Scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x999999);
