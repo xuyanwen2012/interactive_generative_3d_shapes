@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ShapeNet Three Project</title>
+    <meta charset="utf-8">
+    <meta content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+          name="viewport">
+    <style>
+        body {
+            color: #808080;
+            font-family: Monospace, serif;
+            font-size: 13px;
+            text-align: center;
+
+            background-color: #fff;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #info {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            padding: 5px;
+        }
+
+        a {
+            color: #0080ff;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="container"></div>
+
+<div id="info"><a href="http://threejs.org" rel="noopener" target="_blank">three.js</a>
+    Interactive application
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/101/three.js"></script>
+
+<script src="js/OBJLoader.js"></script>
+<script src="js/OrbitControls.js"></script>
+
+<script src="pointCloud.js"></script>
+<script src="index.js"></script>
+</body>
+</html>
