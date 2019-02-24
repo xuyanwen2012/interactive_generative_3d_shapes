@@ -63,6 +63,8 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
   loader.load(path, (group) => {
     let mesh = group.children[0];
 
+    console.log(mesh.geometry.attributes);
+
     // mesh.material = new THREE.MeshNormalMaterial();
     // mesh.material.flatShading = true;
     // mesh.material.needsUpdate = true;
