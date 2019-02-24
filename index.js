@@ -67,15 +67,15 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
     mesh.material.flatShading = true;
     mesh.material.needsUpdate = true;
 
+    // mesh.material = new NaiveDepthGenerator().material;
+
     mesh.position.set(pos.x, pos.y, pos.z);
+    scene.add(group);
 
     let points = generatePointCloudFromGeo(new THREE.Color(1, 0, 0), mesh.geometry);
     scene.add(points);
 
-    points.position.set(pos.x, pos.y, pos.z);
-
-    // let box = new THREE.BoxHelper(group, 0xffff00);
-    // scene.add(box);
+    points.position.set(pos.x + 3, pos.y, pos.z);
 
     let box = new BoundingBox(group, 0xffff00);
     scene.add(box);
