@@ -6,16 +6,11 @@ const vertex_shader = `
   precision mediump float;
   precision mediump int;
   
-	attribute vec3 position;
-	attribute vec4 color;
-	
 	varying vec3 vPosition;
-	varying vec4 vColor;
 	
 	void main()	{
 		vPosition = position;
-		vColor = color;
-		gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 	}
 `;
 
@@ -28,10 +23,11 @@ const fragment_shader = `
 	precision mediump int;
 
 	varying vec3 vPosition;
-	varying vec4 vColor;
 	
 	void main()	{
-		vec4 color = vec4( vColor );
+	  float depth = 1.0 - (2.0 - vPosition.y) / 2.0;
+	
+		vec4 color = vec4(vPosition.x / 2.0, depth, vPosition.z / 6.0, 1.0 );
 		gl_FragColor = color;
 	}
 `;

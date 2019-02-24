@@ -63,11 +63,11 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
   loader.load(path, (group) => {
     let mesh = group.children[0];
 
-    mesh.material = new THREE.MeshNormalMaterial();
-    mesh.material.flatShading = true;
-    mesh.material.needsUpdate = true;
+    // mesh.material = new THREE.MeshNormalMaterial();
+    // mesh.material.flatShading = true;
+    // mesh.material.needsUpdate = true;
 
-    // mesh.material = new NaiveDepthGenerator().material;
+    mesh.material = new NaiveDepthGenerator().material;
 
     mesh.position.set(pos.x, pos.y, pos.z);
     scene.add(group);
