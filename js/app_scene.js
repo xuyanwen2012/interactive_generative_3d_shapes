@@ -49,20 +49,23 @@ class AppScene extends THREE.Scene {
   addModel(group) {
     this.add(group);
 
-    this.boxHelper = new BoundingBox(group, 0xffff00);
-    this.add(this.boxHelper);
+    /**
+     * @type {BoundingBox}
+     */
+    this.box = new BoundingBox(group, 0xffff00);
+    this.add(this.box);
   }
 
   hideHelpers() {
     this.gridHelper.visible = false;
-    this.boxHelper.visible = false;
+    this.box.visible = false;
 
     render();
   }
 
   showHelpers() {
     this.gridHelper.visible = true;
-    this.boxHelper.visible = true;
+    this.box.visible = true;
 
     render();
   }

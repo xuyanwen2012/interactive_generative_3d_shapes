@@ -87,6 +87,10 @@ class BoundingBox extends THREE.LineSegments {
 
     this.geometry.computeBoundingSphere();
   }
+
+  tempSubdivide() {
+    // const tempNextLayer
+  }
 }
 
 
