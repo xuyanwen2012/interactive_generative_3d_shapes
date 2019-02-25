@@ -1,7 +1,12 @@
 'use strict';
 
+// Global variables
 let camera, scene, renderer;
-const frustumSize = 10;
+
+const frustumSize = 6;
+const canvasWidth = 600;
+const canvasHeight = 600;
+const aspect = 1.0;
 
 /**
  * @type {THREE.OBJLoader}
@@ -12,6 +17,14 @@ init();
 
 function initGUI() {
   const gui = new dat.GUI();
+
+  let obj = {
+    show: () => scene.showHelpers(),
+    hide: () => scene.hideHelpers()
+  };
+
+  gui.add(obj, 'show');
+  gui.add(obj, 'hide');
 }
 
 function init() {
@@ -23,36 +36,15 @@ function init() {
     preserveDrawingBuffer: true
   });
 
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(1.0);
+  renderer.setSize(canvasWidth, canvasHeight);
   document.body.appendChild(renderer.domElement);
 
   // Scene
   scene = new AppScene();
 
   // OBJ
-  // function readJSON(path) {
-  //   const xhr = new XMLHttpRequest();
-  //   xhr.open('GET', path, true);
-  //   xhr.responseType = 'json';
-  //   xhr.onload = (e) => {
-  //     if (e.status === 200) {
-  //       const file = new File([this.response], '_index.json');
-  //       const fileReader = new FileReader();
-  //       fileReader.addEventListener('load', () => {
-  //         console.log(file);
-  //       });
-  //       fileReader.readAsText(file);
-  //     }
-  //   };
-  //   xhr.send();
-  // }
-  // readJSON('./models/_index.json');
   loadModel('./models/1abeca7159db7ed9f200a72c9245aee7.obj');
-  // loadModel('./models/1acfbda4ce0ec524bedced414fad522f.obj', new THREE.Vector3(0, 0, 5));
-  // loadModel('./models/1ae530f49a914595b491214a0cc2380.obj', new THREE.Vector3(0, 0, -5));
-  // loadModel('./models/1aef0af3cdafb118c6a40bdf315062da.obj', new THREE.Vector3(-2, 0, 0));
-  // loadModel('./models/1b5b5a43e0281030b96212c8f6cd06e.obj', new THREE.Vector3(-4, 0, 0));
 
   window.addEventListener('resize', onWindowResize, false);
   document.addEventListener('mousemove', onDocumentMouseMove, false);
@@ -70,28 +62,22 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
 
     console.log(mesh.geometry.attributes);
 
-    // mesh.material = new THREE.MeshNormalMaterial();
-    // mesh.material.flatShading = true;
-    // mesh.material.needsUpdate = true;
-
     mesh.material = new NaiveDepthGenerator().material;
-
     mesh.position.set(pos.x, pos.y, pos.z);
-    scene.add(group);
+    scene.addModel(group);
+
 
     let points = generatePointCloudFromGeo(new THREE.Color(1, 0, 0), mesh.geometry);
     scene.add(points);
 
     points.position.set(pos.x + 3, pos.y, pos.z);
 
-    let box = new BoundingBox(group, 0xffff00);
-    scene.add(box);
-
     render();
   });
 }
 
 function render() {
+  renderer.clear();
   renderer.render(scene, camera);
 }
 
@@ -100,20 +86,17 @@ function onDocumentMouseMove(event) {
 }
 
 function onWindowResize() {
-  const SCREEN_WIDTH = window.innerWidth;
-  const SCREEN_HEIGHT = window.innerHeight;
-  const aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+  renderer.setSize(canvasWidth, canvasHeight);
 
-  renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  camera.aspect = aspect;
 
-  camera.aspect = 0.5 * aspect;
-  camera.updateProjectionMatrix();
-
-  camera.left = -0.5 * frustumSize * aspect / 2;
-  camera.right = 0.5 * frustumSize * aspect / 2;
+  camera.left = -frustumSize * aspect / 2;
+  camera.right = frustumSize * aspect / 2;
   camera.top = frustumSize / 2;
   camera.bottom = -frustumSize / 2;
   camera.updateProjectionMatrix();
+
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   render();
 }
