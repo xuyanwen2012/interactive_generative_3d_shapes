@@ -160,7 +160,7 @@ function createHeightSurface(pixels) {
   });
   const plane = new THREE.Mesh(geometry, material);
 
-  plane.position.set(-3, 1, 0);
+  plane.position.set(-3, 0, -3);
 
   console.log(geometry);
   scene.add(plane);
