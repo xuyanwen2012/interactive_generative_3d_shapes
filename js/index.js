@@ -1,6 +1,7 @@
 'use strict';
 
 let camera, scene, renderer;
+const frustumSize = 10;
 
 /**
  * @type {THREE.OBJLoader}
@@ -48,8 +49,8 @@ function init() {
   // }
   // readJSON('./models/_index.json');
   loadModel('./models/1abeca7159db7ed9f200a72c9245aee7.obj');
-  loadModel('./models/1acfbda4ce0ec524bedced414fad522f.obj', new THREE.Vector3(0, 0, 5));
-  loadModel('./models/1ae530f49a914595b491214a0cc2380.obj', new THREE.Vector3(0, 0, -5));
+  // loadModel('./models/1acfbda4ce0ec524bedced414fad522f.obj', new THREE.Vector3(0, 0, 5));
+  // loadModel('./models/1ae530f49a914595b491214a0cc2380.obj', new THREE.Vector3(0, 0, -5));
   // loadModel('./models/1aef0af3cdafb118c6a40bdf315062da.obj', new THREE.Vector3(-2, 0, 0));
   // loadModel('./models/1b5b5a43e0281030b96212c8f6cd06e.obj', new THREE.Vector3(-4, 0, 0));
 
@@ -99,10 +100,20 @@ function onDocumentMouseMove(event) {
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const SCREEN_WIDTH = window.innerWidth;
+  const SCREEN_HEIGHT = window.innerHeight;
+  const aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+
+  renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+  camera.aspect = 0.5 * aspect;
   camera.updateProjectionMatrix();
 
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.left = -0.5 * frustumSize * aspect / 2;
+  camera.right = 0.5 * frustumSize * aspect / 2;
+  camera.top = frustumSize / 2;
+  camera.bottom = -frustumSize / 2;
+  camera.updateProjectionMatrix();
 
   render();
 }
