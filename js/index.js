@@ -101,3 +101,14 @@ function onWindowResize() {
   render();
 }
 
+function screenShot() {
+  const gl = renderer.domElement.getContext('webgl');
+  const width = canvasWidth;
+  const height = canvasHeight;
+  const pixels = new Uint8Array(width * height * 4);
+
+  gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+  console.log(pixels); // Uint8Array
+}
+
