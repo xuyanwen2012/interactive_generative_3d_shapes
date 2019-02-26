@@ -53,6 +53,14 @@ function init() {
   window.addEventListener('mousemove', onMouseMove, false);
 }
 
+/**
+ * @param geometry {Geometry}
+ */
+function createEdgeHelper(geometry) {
+  const edges = new THREE.EdgesGeometry(geometry);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0x0000ff}));
+  scene.add(line);
+}
 
 function temp() {
   let geometry = new NaiveBox();
@@ -60,22 +68,11 @@ function temp() {
     color: 0xFFFFFF,
   });
   // const material = new THREE.MeshNormalMaterial();
-  const points = new THREE.Mesh(geometry, material);
-  scene.add(points);
-}
+  const box = new THREE.Mesh(geometry, material);
+  scene.add(box);
 
-// function temp() {
-//   let geometry = new NaiveBox();
-//   const material = new THREE.PointsMaterial({
-//     size: 1,
-//     vertexColors: THREE.VertexColors
-//   });
-//   const points = new THREE.Points(geometry, material);
-//   scene.add(points);
-//
-//   // const helper = new THREE.VertexNormalsHelper(points, 2, 0x00ff00, 1);
-//   // scene.add(helper);
-// }
+  createEdgeHelper(geometry);
+}
 
 /**
  * @param path {string}
