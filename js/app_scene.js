@@ -44,6 +44,11 @@ class AppScene extends THREE.Scene {
      */
     this.gridHelper = new THREE.GridHelper(10, 10, 0xffffff, 0x555555);
 
+    /**
+     * @type {AxesHelper}
+     */
+    this.axesHelper = new THREE.AxesHelper();
+
     controls.addEventListener('change', render);
     controls.target.set(0, 0, 0);
     controls.update();
@@ -51,6 +56,8 @@ class AppScene extends THREE.Scene {
     this.add(light);
     this.add(camera);
     this.add(this.gridHelper);
+
+    this.add(this.axesHelper);
   }
 
   /**
@@ -77,6 +84,7 @@ class AppScene extends THREE.Scene {
     this.gridHelper.visible = false;
     this.box.visible = false;
     this.vertexNormal.visible = false;
+    this.axesHelper.visible = false;
 
     render();
   }
@@ -85,6 +93,7 @@ class AppScene extends THREE.Scene {
     this.gridHelper.visible = true;
     this.box.visible = true;
     this.vertexNormal.visible = true;
+    this.axesHelper.visible = true;
 
     render();
   }

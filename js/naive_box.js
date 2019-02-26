@@ -29,6 +29,42 @@ class ShrinkWrapper {
 
     scene.add(this.mesh);
 
+
+    /*
+
+
+
+    */
+    /**
+     *          7____6
+     *        3/___2/|
+     *       | 5__|_4
+     *      1/___0/
+     * @type {Map<string, Vector3>}
+     */
+    this.predefinedNormals = new Map([
+      ['0_1', new THREE.Vector3(0, -1, -1)], // -z, -y
+      ['0_2', new THREE.Vector3(-1, 0, -1)], // -x, -z
+      // ['1_2', new THREE.Vector3(, ,)], // face
+      ['1_3', new THREE.Vector3(1, -1, 0)], // x, -y
+      ['2_3', new THREE.Vector3(0, 1, -1)], // -z. y
+      ['4_6', new THREE.Vector3(1, 0, 1)], // -x. z
+      // ['0_6', new THREE.Vector3()], // face
+      ['0_4', new THREE.Vector3(-1, -1, 0)], // -x. -y
+      ['2_6', new THREE.Vector3(-1, 1, 0)], // -x. -y
+      // ['4_7', new THREE.Vector3()], // face
+      ['6_7', new THREE.Vector3(0, 1, 1)], // y,z
+      ['5_7', new THREE.Vector3(1, 0, 1)], // x,z
+      ['4_5', new THREE.Vector3(0, -1, 1)], // -y,z
+      ['1_5', new THREE.Vector3(1, -1, 0)], // x,-y
+      // ['1_7', new THREE.Vector3()], // face
+      ['3_7', new THREE.Vector3(1, 1, 0)], // x,y
+      // ['2_7', new THREE.Vector3(1, 1, 0)], // face
+      // ['0_5', new THREE.Vector3(1, 1, 0)], // face
+    ]);
+
+    this.predefinedNormals.values().forEach(v => v.normalize());
+
     this.initHelpers();
   }
 
@@ -171,7 +207,7 @@ class ShrinkWrapper {
 
     newEdgeVertices = [];
     let other, currentEdge, newEdge, face;
-    let edgeVertexWeight, adjacentVertexWeight, connectedFaces;
+    let connectedFaces;
 
     for (i in sourceEdges) {
       currentEdge = sourceEdges[i];
