@@ -1,7 +1,15 @@
 'use strict';
 
+// Global variables
 let camera, scene, renderer;
-const frustumSize = 10;
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+
+// Some constants
+const frustumSize = 6;
+const canvasWidth = 600;
+const canvasHeight = 600;
+const aspect = 1.0;
 
 /**
  * @type {THREE.OBJLoader}
@@ -12,6 +20,14 @@ init();
 
 function initGUI() {
   const gui = new dat.GUI();
+
+  let obj = {
+    show: () => scene.showHelpers(),
+    hide: () => scene.hideHelpers()
+  };
+
+  gui.add(obj, 'show');
+  gui.add(obj, 'hide');
 }
 
 function init() {
@@ -23,41 +39,40 @@ function init() {
     preserveDrawingBuffer: true
   });
 
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(1.0);
+  renderer.setSize(canvasWidth, canvasHeight);
   document.body.appendChild(renderer.domElement);
 
   // Scene
   scene = new AppScene();
 
   // OBJ
-  // function readJSON(path) {
-  //   const xhr = new XMLHttpRequest();
-  //   xhr.open('GET', path, true);
-  //   xhr.responseType = 'json';
-  //   xhr.onload = (e) => {
-  //     if (e.status === 200) {
-  //       const file = new File([this.response], '_index.json');
-  //       const fileReader = new FileReader();
-  //       fileReader.addEventListener('load', () => {
-  //         console.log(file);
-  //       });
-  //       fileReader.readAsText(file);
-  //     }
-  //   };
-  //   xhr.send();
-  // }
-  // readJSON('./models/_index.json');
   loadModel('./models/1abeca7159db7ed9f200a72c9245aee7.obj');
-  // loadModel('./models/1acfbda4ce0ec524bedced414fad522f.obj', new THREE.Vector3(0, 0, 5));
-  // loadModel('./models/1ae530f49a914595b491214a0cc2380.obj', new THREE.Vector3(0, 0, -5));
-  // loadModel('./models/1aef0af3cdafb118c6a40bdf315062da.obj', new THREE.Vector3(-2, 0, 0));
-  // loadModel('./models/1b5b5a43e0281030b96212c8f6cd06e.obj', new THREE.Vector3(-4, 0, 0));
 
   window.addEventListener('resize', onWindowResize, false);
-  document.addEventListener('mousemove', onDocumentMouseMove, false);
+  window.addEventListener('mousemove', onMouseMove, false);
 }
 
+/**
+ * @param geometry {Geometry}
+ */
+function createEdgeHelper(geometry) {
+  const edges = new THREE.EdgesGeometry(geometry);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0x0000ff}));
+  scene.add(line);
+}
+
+function temp() {
+  let geometry = new NaiveBox();
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xFFFFFF,
+  });
+  // const material = new THREE.MeshNormalMaterial();
+  const box = new THREE.Mesh(geometry, material);
+  scene.add(box);
+
+  createEdgeHelper(geometry);
+}
 
 /**
  * @param path {string}
@@ -70,51 +85,154 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
 
     console.log(mesh.geometry.attributes);
 
-    // mesh.material = new THREE.MeshNormalMaterial();
-    // mesh.material.flatShading = true;
-    // mesh.material.needsUpdate = true;
-
     mesh.material = new NaiveDepthGenerator().material;
-
     mesh.position.set(pos.x, pos.y, pos.z);
-    scene.add(group);
+    // scene.addModel(group);
 
-    let points = generatePointCloudFromGeo(new THREE.Color(1, 0, 0), mesh.geometry);
-    scene.add(points);
-
-    points.position.set(pos.x + 3, pos.y, pos.z);
-
-    let box = new BoundingBox(group, 0xffff00);
-    scene.add(box);
-
+    depth_map_mesh = mesh;
     render();
+    // screenShot();
+    temp();
   });
 }
 
 function render() {
+  renderer.clear();
   renderer.render(scene, camera);
+
+  if (!depth_map_mesh) {
+    return;
+  }
+
+  raycaster.setFromCamera(mouse, camera);
+  // See if the ray from the camera into the world hits one of our meshes
+  const intersects = raycaster.intersectObject(depth_map_mesh);
+  // Toggle rotation bool for meshes that we clicked
+  if (intersects.length > 0) {
+    helper.position.set(0, 0, 0);
+    helper.lookAt(intersects[0].face.normal);
+    helper.position.copy(intersects[0].point);
+  }
 }
 
-function onDocumentMouseMove(event) {
+// Temp
+let helper;
+createRaycast();
+
+function createRaycast() {
+  const geometry = new THREE.ConeBufferGeometry(0.1, 0.25, 3);
+  geometry.translate(0, 0, 0);
+  geometry.rotateX(Math.PI / 2);
+  helper = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
+  scene.add(helper);
+}
+
+function onMouseMove(event) {
   event.preventDefault();
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 }
 
 function onWindowResize() {
-  const SCREEN_WIDTH = window.innerWidth;
-  const SCREEN_HEIGHT = window.innerHeight;
-  const aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+  renderer.setSize(canvasWidth, canvasHeight);
 
-  renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  camera.aspect = aspect;
+  // updateOrthoCamera();
 
-  camera.aspect = 0.5 * aspect;
-  camera.updateProjectionMatrix();
+  render();
+}
 
-  camera.left = -0.5 * frustumSize * aspect / 2;
-  camera.right = 0.5 * frustumSize * aspect / 2;
+function updateOrthoCamera() {
+  camera.left = -frustumSize * aspect / 2;
+  camera.right = frustumSize * aspect / 2;
   camera.top = frustumSize / 2;
   camera.bottom = -frustumSize / 2;
   camera.updateProjectionMatrix();
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+}
 
-  render();
+/**
+ * temporary
+ */
+function screenShot() {
+  scene.hideHelpers();
+
+  const gl = renderer.domElement.getContext('webgl');
+
+  const unit = 100;
+  const width = 2 * unit;
+  const height = 6 * unit;
+  const pixels = new Uint8Array(width * height * 4);
+
+  gl.readPixels(
+    200,
+    0,
+    width,
+    height,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    pixels,
+  );
+
+  createDepthSurface(pixels);
+  // createDepthSurface(pixels)
+}
+
+
+let depth_map_mesh;
+
+/**
+ * @param pixels {Uint8Array}
+ */
+function createDepthSurface(pixels) {
+  console.log(pixels); // Uint8Array
+
+  const geometry = new THREE.Geometry();
+  const width = 600;
+  const depth = 200;
+  for (let x = 0; x < depth; x++) {
+    for (let z = 0; z < width; z++) {
+      // let red = pixels[z * (w * 4) + x * 4];
+      let yValue = pixels[z * (depth * 4) + x * 4] / 128.0;
+      // let yValue = pixels[z * 4 + (depth * x * 4)] / 128.0;
+      let vertex = new THREE.Vector3(x / 100.0, yValue, z / 100.0);
+      geometry.vertices.push(vertex);
+    }
+  }
+
+  // we create a rectangle between four vertices, and we do
+  // that as two triangles.
+  for (let z = 0; z < depth - 1; z++) {
+    for (let x = 0; x < width - 1; x++) {
+      // we need to point to the position in the array
+      // a - - b
+      // |  x  |
+      // c - - d
+      const a = x + z * width;
+      const b = (x + 1) + (z * width);
+      const c = x + ((z + 1) * width);
+      const d = (x + 1) + ((z + 1) * width);
+      const face1 = new THREE.Face3(a, b, d);
+      const face2 = new THREE.Face3(d, c, a);
+      face1.color = new THREE.Color(1, 1, 1);
+      face2.color = new THREE.Color(1, 1, 1);
+      geometry.faces.push(face1);
+      geometry.faces.push(face2);
+    }
+  }
+
+  geometry.computeVertexNormals(true);
+  geometry.computeFaceNormals();
+  geometry.computeBoundingBox();
+
+  const material = new THREE.MeshNormalMaterial();
+  const plane = new THREE.Mesh(geometry, material);
+
+  plane.rotation.y = Math.PI;
+  plane.position.set(3, 0, 3);
+  // const helper = new THREE.VertexNormalsHelper(plane, 2, 0x00ff00, 1);
+  // scene.add(helper);
+  scene.add(plane);
+  // depth_map_mesh = plane;
 }
 
