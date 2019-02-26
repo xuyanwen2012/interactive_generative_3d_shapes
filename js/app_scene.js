@@ -8,6 +8,18 @@ class AppScene extends THREE.Scene {
 
     this.background = new THREE.Color(0x000000);
 
+    this.setupPerspectiveCamera();
+    // this.setupOrthoCamera();
+    this.setupScene();
+  }
+
+  setupPerspectiveCamera() {
+    camera = new THREE.PerspectiveCamera(35, aspect, 0.01, 20);
+    camera.position.set(0, 4, 0);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+  }
+
+  setupOrthoCamera() {
     camera = new THREE.OrthographicCamera(
       frustumSize * aspect / -2,
       frustumSize * aspect / 2,
@@ -18,8 +30,6 @@ class AppScene extends THREE.Scene {
     );
     camera.position.set(0, 4, 0);
     camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-    this.setupScene();
   }
 
   /**

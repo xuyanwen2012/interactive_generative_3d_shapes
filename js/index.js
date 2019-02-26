@@ -56,16 +56,26 @@ function init() {
 
 function temp() {
   let geometry = new NaiveBox();
-  const material = new THREE.PointsMaterial({
-    size: pointSize,
-    vertexColors: THREE.VertexColors
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xFFFFFF,
   });
-  const points = new THREE.Points(geometry, material);
+  // const material = new THREE.MeshNormalMaterial();
+  const points = new THREE.Mesh(geometry, material);
   scene.add(points);
-
-  const helper = new THREE.VertexNormalsHelper(points, 2, 0x00ff00, 1);
-  scene.add(helper);
 }
+
+// function temp() {
+//   let geometry = new NaiveBox();
+//   const material = new THREE.PointsMaterial({
+//     size: 1,
+//     vertexColors: THREE.VertexColors
+//   });
+//   const points = new THREE.Points(geometry, material);
+//   scene.add(points);
+//
+//   // const helper = new THREE.VertexNormalsHelper(points, 2, 0x00ff00, 1);
+//   // scene.add(helper);
+// }
 
 /**
  * @param path {string}
@@ -80,7 +90,7 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
 
     mesh.material = new NaiveDepthGenerator().material;
     mesh.position.set(pos.x, pos.y, pos.z);
-    scene.addModel(group);
+    // scene.addModel(group);
 
     depth_map_mesh = mesh;
     render();
@@ -130,16 +140,18 @@ function onWindowResize() {
   renderer.setSize(canvasWidth, canvasHeight);
 
   camera.aspect = aspect;
+  // updateOrthoCamera();
 
+  render();
+}
+
+function updateOrthoCamera() {
   camera.left = -frustumSize * aspect / 2;
   camera.right = frustumSize * aspect / 2;
   camera.top = frustumSize / 2;
   camera.bottom = -frustumSize / 2;
   camera.updateProjectionMatrix();
-
   camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-  render();
 }
 
 /**
