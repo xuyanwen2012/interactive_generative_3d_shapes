@@ -163,7 +163,7 @@ class ShrinkWrapper {
    */
   shrink() {
     const ABC = ['a', 'b', 'c'];
-    // let tmp = new THREE.Vector3();
+    let tmp = new THREE.Vector3();
 
     let oldVertices, oldFaces;
     let newVertices, newFaces; // newUVs = [];
@@ -216,14 +216,13 @@ class ShrinkWrapper {
       }
 
       // IVAN: find the center point of this edge
-      let tmp = new THREE.Vector3();
+      // let tmp = new THREE.Vector3();
       tmp.set(0, 0, 0);
 
       tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
 
-      // console.log(i, currentEdge, newEdge);
 
-      this.debugShowPoint(tmp);
+      // this.debugShowPoint(tmp);
 
       /**
        * @type {Vector3}
@@ -237,8 +236,13 @@ class ShrinkWrapper {
         this.debugProjectPint(tmp, normal);
       }
 
-    }
+      newEdge.add(tmp);
 
+      currentEdge.newEdge = newEdgeVertices.length;
+      newEdgeVertices.push(newEdge);
+
+      // console.log(i, currentEdge, newEdge);
+    }
 
     /******************************************************
      *
@@ -247,6 +251,15 @@ class ShrinkWrapper {
      *  and edge vertices.
      *
      *******************************************************/
+
+    newVertices = oldVertices.concat(newEdgeVertices);
+    let sl = oldVertices.length, edge1, edge2, edge3;
+    newFaces = [];
+
+    console.log(newVertices);
+
+    newVertices.forEach(v => this.debugShowPoint(v))
+
   }
 
   /**
