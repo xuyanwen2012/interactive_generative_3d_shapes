@@ -1,6 +1,14 @@
 class ShrinkWrapper {
 
-  constructor() {
+  /**
+   * @param target {Mesh}
+   */
+  constructor(target) {
+
+    /**
+     * @type {Mesh}
+     */
+    this.target = target;
 
     /**
      * @type {NaiveBox}
@@ -185,6 +193,7 @@ class ShrinkWrapper {
 
       console.log(i, currentEdge, newEdge);
       this.debugShowPoint(tmp);
+      this.debugProjectPintUp(tmp);
     }
 
 
@@ -199,17 +208,16 @@ class ShrinkWrapper {
 
   /**
    * @param pos {Vector3}
+   * @param color {Number}
    */
-  debugShowPoint(pos) {
+  debugShowPoint(pos, color = 0xFACADE) {
     const dotGeometry = new THREE.Geometry();
     dotGeometry.vertices.push(pos);
     const dotMaterial = new THREE.PointsMaterial({
       size: 0.5,
-      color: 0xFACADE,
-      // sizeAttenuation: false
+      color: color,
     });
     const dot = new THREE.Points(dotGeometry, dotMaterial);
-    // dot.position.set(pos);
     scene.add(dot);
   }
 
@@ -219,15 +227,17 @@ class ShrinkWrapper {
   debugProjectPintUp(vert) {
     // shot a ray from this vertex up util hit a point
     const raycaster = new THREE.Raycaster();
-    raycaster.set()
+    raycaster.set(vert, new THREE.Vector3(0, 1, 0));
 
-    // const intersects = raycaster.intersectObject(depth_map_mesh);
-    // // Toggle rotation bool for meshes that we clicked
-    // if (intersects.length > 0) {
-    //   helper.position.set(0, 0, 0);
-    //   helper.lookAt(intersects[0].face.normal);
-    //   helper.position.copy(intersects[0].point);
-    // }
+    const intersects = raycaster.intersectObject(this.target);
+
+    // Toggle rotation bool for meshes that we clicked
+    if (intersects.length > 0) {
+      console.log('hit');
+      this.debugShowPoint(intersects[0].point, 0xFF0000);
+    } else {
+      console.log('missed');
+    }
   }
 }
 
@@ -236,10 +246,6 @@ class NaiveBox extends THREE.Geometry {
   constructor() {
     super();
 
-    this.initShrink();
-  }
-
-  initShrink() {
     this.vertices.length = 0;
     this.faces.length = 0;
 
@@ -299,6 +305,5 @@ class NaiveBox extends THREE.Geometry {
     this.computeVertexNormals();
     this.computeFaceNormals();
     this.computeBoundingBox();
-
   }
 }

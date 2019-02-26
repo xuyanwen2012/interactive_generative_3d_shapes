@@ -54,11 +54,6 @@ function init() {
 }
 
 
-function temp() {
-  const jjj = new ShrinkWrapper();
-  jjj.shrink();
-}
-
 /**
  * @param path {string}
  * @param pos {THREE.Vector3}
@@ -72,12 +67,14 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
 
     mesh.material = new NaiveDepthGenerator().material;
     mesh.position.set(pos.x, pos.y, pos.z);
-    // scene.addModel(group);
+    scene.addModel(group);
 
     depth_map_mesh = mesh;
     render();
     // screenShot();
-    temp();
+
+    const jjj = new ShrinkWrapper(mesh);
+    jjj.shrink();
   });
 }
 

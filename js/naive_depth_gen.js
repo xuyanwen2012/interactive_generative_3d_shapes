@@ -8,7 +8,7 @@ class NaiveDepthGenerator {
       uniforms: {},
       vertexShader: vertex_shader,
       fragmentShader: fragment_shader,
-      // side: THREE.DoubleSide,
+      side: THREE.DoubleSide,
       transparent: true,
     });
   }
