@@ -277,17 +277,19 @@ class ShrinkWrapper {
 
     // console.log(newVertices);
 
-    // newVertices.forEach(v => this.debugShowPoint(v))
-
     for (i = 0, il = oldFaces.length; i < il; i++) {
 
       face = oldFaces[i];
 
       // find the 3 new edges vertex of each old face
+      // Edge => { oldVertex1, oldVertex2, faces[]  }
 
       edge1 = this.getEdge(face.a, face.b, sourceEdges).newEdge + sl;
       edge2 = this.getEdge(face.b, face.c, sourceEdges).newEdge + sl;
       edge3 = this.getEdge(face.c, face.a, sourceEdges).newEdge + sl;
+
+      // console.log(`${edge1.a}_${edge1.b}`);
+      console.log(this.getEdge(face.a, face.b, sourceEdges));
 
       // create 4 faces.
 
