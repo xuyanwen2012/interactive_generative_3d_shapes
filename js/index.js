@@ -68,10 +68,9 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
     scene.addModel(group);
 
 
-    let points = generatePointCloudFromGeo(new THREE.Color(1, 0, 0), mesh.geometry);
-    scene.add(points);
-
-    points.position.set(pos.x + 3, pos.y, pos.z);
+    // let points = generatePointCloudFromGeo(new THREE.Color(1, 0, 0), mesh.geometry);
+    // scene.add(points);
+    // points.position.set(pos.x + 3, pos.y, pos.z);
 
     render();
 
@@ -108,6 +107,8 @@ function onWindowResize() {
  * temporary
  */
 function screenShot() {
+  scene.hideHelpers();
+
   const gl = renderer.domElement.getContext('webgl');
 
   const unit = 100;
@@ -126,6 +127,7 @@ function screenShot() {
   );
 
   createHeightSurface(pixels);
+  // createDepthSurface(pixels)
 }
 
 /**
@@ -134,34 +136,50 @@ function screenShot() {
 function createHeightSurface(pixels) {
   console.log(pixels); // Uint8Array
 
-  const numPixels = pixels.length / 4;
-
-  // const skip = numPixels
-
-
-  // const geometry = new THREE.PlaneGeometry(2, 6, 200, 600);
-  const geometry = new THREE.BufferGeometry();
-  const w = 200;
-  const h = 600;
-  let arr = [];
-  for (let x = 0; x < w; x++) {
-    for (let z = 0; z < h; z++) {
-      let red = pixels[z * (w * 4) + x * 4];
-      arr.push(x / 100.0, red / 128.0, z / 100.0);
+  const geometry = new THREE.Geometry();
+  const width = 200;
+  const depth = 600;
+  for (let x = 0; x < depth; x++) {
+    for (let z = 0; z < width; z++) {
+      // let red = pixels[z * (w * 4) + x * 4];
+      // let yValue = pixels[z * (depth * 4) + x * 4] / 128.0;
+      let yValue = pixels[z * 4 + (depth * x * 4)] / 128.0;
+      let vertex = new THREE.Vector3(x / 100.0, yValue, z / 100.0);
+      geometry.vertices.push(vertex);
     }
   }
-  let vertices = new Float32Array(arr);
-  geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+  // we create a rectangle between four vertices, and we do
+  // that as two triangles.
+  for (let z = 0; z < depth - 1; z++) {
+    for (let x = 0; x < width - 1; x++) {
+      // we need to point to the position in the array
+      // a - - b
+      // |  x  |
+      // c - - d
+      const a = x + z * width;
+      const b = (x + 1) + (z * width);
+      const c = x + ((z + 1) * width);
+      const d = (x + 1) + ((z + 1) * width);
+      const face1 = new THREE.Face3(a, b, d);
+      const face2 = new THREE.Face3(d, c, a);
+      face1.color = new THREE.Color(1, 1, 1);
+      face2.color = new THREE.Color(1, 1, 1);
+      geometry.faces.push(face1);
+      geometry.faces.push(face2);
+    }
+  }
+  geometry.computeVertexNormals(true);
+  geometry.computeFaceNormals();
   geometry.computeBoundingBox();
 
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffff00,
-    wireframe: true,
-  });
+  const material = new THREE.MeshNormalMaterial();
   const plane = new THREE.Mesh(geometry, material);
 
   plane.position.set(-3, 0, -3);
 
-  console.log(geometry);
+  // const helper = new THREE.VertexNormalsHelper(plane, 2, 0x00ff00, 1);
+  // scene.add(helper);
   scene.add(plane);
 }
+

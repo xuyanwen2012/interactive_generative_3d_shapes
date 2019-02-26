@@ -53,12 +53,20 @@ class AppScene extends THREE.Scene {
      * @type {BoundingBox}
      */
     this.box = new BoundingBox(group, 0xffff00);
+
+    /**
+     * @type {VertexNormalsHelper}
+     */
+    this.vertexNormal = new THREE.VertexNormalsHelper(group, 2, 0xffff00, 1);
+
     this.add(this.box);
+    this.add(this.vertexNormal);
   }
 
   hideHelpers() {
     this.gridHelper.visible = false;
     this.box.visible = false;
+    this.vertexNormal.visible = false;
 
     render();
   }
@@ -66,6 +74,7 @@ class AppScene extends THREE.Scene {
   showHelpers() {
     this.gridHelper.visible = true;
     this.box.visible = true;
+    this.vertexNormal.visible = true;
 
     render();
   }
