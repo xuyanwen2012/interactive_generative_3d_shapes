@@ -1,3 +1,237 @@
+class ShrinkWrapper {
+
+  constructor() {
+
+    /**
+     * @type {NaiveBox}
+     */
+    this.geometry = new NaiveBox();
+
+    /**
+     * @type {MeshBasicMaterial}
+     */
+    this.material = new THREE.MeshBasicMaterial({
+      color: 0xFFFFFF,
+    });
+
+    /**
+     * @type {Mesh}
+     */
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
+
+    scene.add(this.mesh);
+
+    this.initHelpers();
+  }
+
+  initHelpers() {
+    this.createEdgeHelper();
+    this.createVertexNormalHelper();
+  }
+
+  /**
+   * @private
+   */
+  createEdgeHelper() {
+    const edges = new THREE.EdgesGeometry(this.geometry);
+    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0x0000ff}));
+    scene.add(line);
+  }
+
+  /**
+   * @private
+   */
+  createVertexNormalHelper() {
+    const helper = new THREE.VertexNormalsHelper(this.mesh, 2, 0x00ff00, 1);
+    scene.add(helper);
+  }
+
+  /**
+   * @private
+   * @param a
+   * @param b
+   * @param vertices
+   * @param map
+   * @param face
+   * @param metaVertices
+   */
+  processEdge(a, b, vertices, map, face, metaVertices) {
+
+    let vertexIndexA = Math.min(a, b);
+    let vertexIndexB = Math.max(a, b);
+
+    let key = `${vertexIndexA}_${vertexIndexB}`;
+
+    let edge;
+
+    if (key in map) {
+
+      edge = map[key];
+
+    } else {
+
+      let vertexA = vertices[vertexIndexA];
+      let vertexB = vertices[vertexIndexB];
+
+      edge = {
+
+        a: vertexA, // pointer reference
+        b: vertexB,
+        newEdge: null,
+        // aIndex: a, // numbered reference
+        // bIndex: b,
+        faces: [] // pointers to face
+
+      };
+
+      map[key] = edge;
+
+    }
+
+    edge.faces.push(face);
+
+    metaVertices[a].edges.push(edge);
+    metaVertices[b].edges.push(edge);
+  }
+
+  /**
+   * @private
+   * @param vertices
+   * @param faces
+   * @param metaVertices
+   * @param edges
+   */
+  generateLookups(vertices, faces, metaVertices, edges) {
+
+    let i, il, face, edge;
+
+    for (i = 0, il = vertices.length; i < il; i++) {
+
+      metaVertices[i] = {edges: []};
+
+    }
+
+    for (i = 0, il = faces.length; i < il; i++) {
+      face = faces[i];
+
+      this.processEdge(face.a, face.b, vertices, edges, face, metaVertices);
+      this.processEdge(face.b, face.c, vertices, edges, face, metaVertices);
+      this.processEdge(face.c, face.a, vertices, edges, face, metaVertices);
+    }
+  }
+
+  /**
+   * Main function
+   */
+  shrink() {
+    const ABC = ['a', 'b', 'c'];
+    // let tmp = new THREE.Vector3();
+
+    let oldVertices, oldFaces;
+    let newVertices, newFaces; // newUVs = [];
+
+    let n, l, i, il, j, k;
+    let metaVertices;
+
+    // new stuff.
+    let sourceEdges, newEdgeVertices, newSourceVertices;
+
+    oldVertices = this.geometry.vertices; // { x, y, z}
+    oldFaces = this.geometry.faces; // { a: oldVertex1, b: oldVertex2, c: oldVertex3 }
+
+    /******************************************************
+     *
+     * Step 0: Preprocess Geometry to Generate edges Lookup
+     *
+     *******************************************************/
+
+    metaVertices = new Array(oldVertices.length);
+    sourceEdges = {}; // Edge => { oldVertex1, oldVertex2, faces[]  }
+
+    this.generateLookups(oldVertices, oldFaces, metaVertices, sourceEdges);
+
+    console.log(metaVertices);
+    console.log(sourceEdges);
+
+    /******************************************************
+     *
+     *  Step 1.
+     *  For each edge, create a new Edge Vertex,
+     *  then position it.
+     *
+     *******************************************************/
+
+    newEdgeVertices = [];
+    let other, currentEdge, newEdge, face;
+    let edgeVertexWeight, adjacentVertexWeight, connectedFaces;
+
+    for (i in sourceEdges) {
+      currentEdge = sourceEdges[i];
+      newEdge = new THREE.Vector3();
+
+      connectedFaces = currentEdge.faces.length;
+
+      // check how many linked faces. 2 should be correct.
+      if (connectedFaces !== 2) {
+
+        console.warn('Subdivision Modifier: Number of connected faces != 2, is: ', connectedFaces, currentEdge);
+      }
+
+      // IVAN: find the center point of this edge
+      let tmp = new THREE.Vector3();
+      tmp.set(0, 0, 0);
+
+      tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
+
+      console.log(i, currentEdge, newEdge);
+      this.debugShowPoint(tmp);
+    }
+
+
+    /******************************************************
+     *
+     *  Step 3.
+     *  Generate Faces between source vertecies
+     *  and edge vertices.
+     *
+     *******************************************************/
+  }
+
+  /**
+   * @param pos {Vector3}
+   */
+  debugShowPoint(pos) {
+    const dotGeometry = new THREE.Geometry();
+    dotGeometry.vertices.push(pos);
+    const dotMaterial = new THREE.PointsMaterial({
+      size: 0.5,
+      color: 0xFACADE,
+      // sizeAttenuation: false
+    });
+    const dot = new THREE.Points(dotGeometry, dotMaterial);
+    // dot.position.set(pos);
+    scene.add(dot);
+  }
+
+  /**
+   * @param vert {Vector3}
+   */
+  debugProjectPintUp(vert) {
+    // shot a ray from this vertex up util hit a point
+    const raycaster = new THREE.Raycaster();
+    raycaster.set()
+
+    // const intersects = raycaster.intersectObject(depth_map_mesh);
+    // // Toggle rotation bool for meshes that we clicked
+    // if (intersects.length > 0) {
+    //   helper.position.set(0, 0, 0);
+    //   helper.lookAt(intersects[0].face.normal);
+    //   helper.position.copy(intersects[0].point);
+    // }
+  }
+}
+
+
 class NaiveBox extends THREE.Geometry {
   constructor() {
     super();
@@ -66,155 +300,5 @@ class NaiveBox extends THREE.Geometry {
     this.computeFaceNormals();
     this.computeBoundingBox();
 
-    this.smooth();
-  }
-
-  processEdge(a, b, vertices, map, face, metaVertices) {
-
-    let vertexIndexA = Math.min(a, b);
-    let vertexIndexB = Math.max(a, b);
-
-    let key = `${vertexIndexA}_${vertexIndexB}`;
-
-    let edge;
-
-    if (key in map) {
-
-      edge = map[key];
-
-    } else {
-
-      let vertexA = vertices[vertexIndexA];
-      let vertexB = vertices[vertexIndexB];
-
-      edge = {
-
-        a: vertexA, // pointer reference
-        b: vertexB,
-        newEdge: null,
-        // aIndex: a, // numbered reference
-        // bIndex: b,
-        faces: [] // pointers to face
-
-      };
-
-      map[key] = edge;
-
-    }
-
-    edge.faces.push(face);
-
-    metaVertices[a].edges.push(edge);
-    metaVertices[b].edges.push(edge);
-  }
-
-  generateLookups(vertices, faces, metaVertices, edges) {
-
-    let i, il, face, edge;
-
-    for (i = 0, il = vertices.length; i < il; i++) {
-
-      metaVertices[i] = {edges: []};
-
-    }
-
-    for (i = 0, il = faces.length; i < il; i++) {
-      face = faces[i];
-
-      this.processEdge(face.a, face.b, vertices, edges, face, metaVertices);
-      this.processEdge(face.b, face.c, vertices, edges, face, metaVertices);
-      this.processEdge(face.c, face.a, vertices, edges, face, metaVertices);
-    }
-  }
-
-  smooth() {
-    const ABC = ['a', 'b', 'c'];
-    // let tmp = new THREE.Vector3();
-
-    let oldVertices, oldFaces;
-    let newVertices, newFaces; // newUVs = [];
-
-    let n, l, i, il, j, k;
-    let metaVertices;
-
-    // new stuff.
-    let sourceEdges, newEdgeVertices, newSourceVertices;
-
-    oldVertices = this.vertices; // { x, y, z}
-    oldFaces = this.faces; // { a: oldVertex1, b: oldVertex2, c: oldVertex3 }
-
-    /******************************************************
-     *
-     * Step 0: Preprocess Geometry to Generate edges Lookup
-     *
-     *******************************************************/
-
-    metaVertices = new Array(oldVertices.length);
-    sourceEdges = {}; // Edge => { oldVertex1, oldVertex2, faces[]  }
-
-    this.generateLookups(oldVertices, oldFaces, metaVertices, sourceEdges);
-
-    console.log(metaVertices);
-    console.log(sourceEdges);
-
-    /******************************************************
-     *
-     *  Step 1.
-     *  For each edge, create a new Edge Vertex,
-     *  then position it.
-     *
-     *******************************************************/
-
-    newEdgeVertices = [];
-    let other, currentEdge, newEdge, face;
-    let edgeVertexWeight, adjacentVertexWeight, connectedFaces;
-
-    for (i in sourceEdges) {
-      currentEdge = sourceEdges[i];
-      newEdge = new THREE.Vector3();
-
-      connectedFaces = currentEdge.faces.length;
-
-      // check how many linked faces. 2 should be correct.
-      if (connectedFaces !== 2) {
-
-        console.warn('Subdivision Modifier: Number of connected faces != 2, is: ', connectedFaces, currentEdge);
-      }
-
-      // IVAN: find the center point of this edge
-      let tmp = new THREE.Vector3();
-      tmp.set(0, 0, 0);
-
-      tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
-
-      // console.log(currentEdge, newEdge);
-      console.log(tmp);
-      this.debugShowPoint(tmp);
-    }
-
-
-    /******************************************************
-     *
-     *  Step 3.
-     *  Generate Faces between source vertecies
-     *  and edge vertices.
-     *
-     *******************************************************/
-  }
-
-  /**
-   * @param pos {Vector3}
-   */
-  debugShowPoint(pos) {
-    const dotGeometry = new THREE.Geometry();
-    dotGeometry.vertices.push(pos);
-    const dotMaterial = new THREE.PointsMaterial({
-      size: 0.5,
-      color: 0xFACADE,
-      // sizeAttenuation: false
-    });
-    const dot = new THREE.Points(dotGeometry, dotMaterial);
-    // dot.position.set(pos);
-    scene.add(dot);
   }
 }
