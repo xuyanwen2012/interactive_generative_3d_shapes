@@ -126,24 +126,24 @@ function screenShot() {
     pixels,
   );
 
-  createHeightSurface(pixels);
+  createDepthSurface(pixels);
   // createDepthSurface(pixels)
 }
 
 /**
  * @param pixels {Uint8Array}
  */
-function createHeightSurface(pixels) {
+function createDepthSurface(pixels) {
   console.log(pixels); // Uint8Array
 
   const geometry = new THREE.Geometry();
-  const width = 200;
-  const depth = 600;
+  const width = 600;
+  const depth = 200;
   for (let x = 0; x < depth; x++) {
     for (let z = 0; z < width; z++) {
       // let red = pixels[z * (w * 4) + x * 4];
-      // let yValue = pixels[z * (depth * 4) + x * 4] / 128.0;
-      let yValue = pixels[z * 4 + (depth * x * 4)] / 128.0;
+      let yValue = pixels[z * (depth * 4) + x * 4] / 128.0;
+      // let yValue = pixels[z * 4 + (depth * x * 4)] / 128.0;
       let vertex = new THREE.Vector3(x / 100.0, yValue, z / 100.0);
       geometry.vertices.push(vertex);
     }
@@ -169,6 +169,7 @@ function createHeightSurface(pixels) {
       geometry.faces.push(face2);
     }
   }
+
   geometry.computeVertexNormals(true);
   geometry.computeFaceNormals();
   geometry.computeBoundingBox();
@@ -176,8 +177,8 @@ function createHeightSurface(pixels) {
   const material = new THREE.MeshNormalMaterial();
   const plane = new THREE.Mesh(geometry, material);
 
-  plane.position.set(-3, 0, -3);
-
+  plane.rotation.y = Math.PI;
+  plane.position.set(3, 0, 3);
   // const helper = new THREE.VertexNormalsHelper(plane, 2, 0x00ff00, 1);
   // scene.add(helper);
   scene.add(plane);
