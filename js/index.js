@@ -83,7 +83,7 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
   loader.load(path, (group) => {
     let mesh = group.children[0];
 
-    console.log(mesh.geometry.attributes);
+    // console.log(mesh.geometry.attributes);
 
     mesh.material = new NaiveDepthGenerator().material;
     mesh.position.set(pos.x, pos.y, pos.z);
@@ -185,7 +185,7 @@ let depth_map_mesh;
  * @param pixels {Uint8Array}
  */
 function createDepthSurface(pixels) {
-  console.log(pixels); // Uint8Array
+  // console.log(pixels); // Uint8Array
 
   const geometry = new THREE.Geometry();
   const width = 600;
