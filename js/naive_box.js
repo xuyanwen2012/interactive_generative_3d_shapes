@@ -125,7 +125,8 @@ class NaiveBox extends THREE.Geometry {
   }
 
   smooth() {
-    let tmp = new THREE.Vector3();
+    const ABC = ['a', 'b', 'c'];
+    // let tmp = new THREE.Vector3();
 
     let oldVertices, oldFaces;
     let newVertices, newFaces; // newUVs = [];
@@ -160,5 +161,57 @@ class NaiveBox extends THREE.Geometry {
      *  then position it.
      *
      *******************************************************/
+
+    newEdgeVertices = [];
+    let other, currentEdge, newEdge, face;
+    let edgeVertexWeight, adjacentVertexWeight, connectedFaces;
+
+    for (i in sourceEdges) {
+      currentEdge = sourceEdges[i];
+      newEdge = new THREE.Vector3();
+
+      connectedFaces = currentEdge.faces.length;
+
+      // check how many linked faces. 2 should be correct.
+      if (connectedFaces !== 2) {
+
+        console.warn('Subdivision Modifier: Number of connected faces != 2, is: ', connectedFaces, currentEdge);
+      }
+
+      // IVAN: find the center point of this edge
+      let tmp = new THREE.Vector3();
+      tmp.set(0, 0, 0);
+
+      tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
+
+      // console.log(currentEdge, newEdge);
+      console.log(tmp);
+      this.debugShowPoint(tmp);
+    }
+
+
+    /******************************************************
+     *
+     *  Step 3.
+     *  Generate Faces between source vertecies
+     *  and edge vertices.
+     *
+     *******************************************************/
+  }
+
+  /**
+   * @param pos {Vector3}
+   */
+  debugShowPoint(pos) {
+    const dotGeometry = new THREE.Geometry();
+    dotGeometry.vertices.push(pos);
+    const dotMaterial = new THREE.PointsMaterial({
+      size: 0.5,
+      color: 0xFACADE,
+      // sizeAttenuation: false
+    });
+    const dot = new THREE.Points(dotGeometry, dotMaterial);
+    // dot.position.set(pos);
+    scene.add(dot);
   }
 }
