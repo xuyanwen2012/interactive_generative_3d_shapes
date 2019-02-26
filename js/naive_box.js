@@ -50,9 +50,9 @@ class ShrinkWrapper {
       ['5_7', new THREE.Vector3(1, 0, 1)], // x,z
       ['4_5', new THREE.Vector3(0, -1, 1)], // -y,z
       ['1_5', new THREE.Vector3(1, -1, 0)], // x,-y
-      ['1_7', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
+      ['3_5', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
       ['3_7', new THREE.Vector3(1, 1, 0)], // x,y
-      ['2_7', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
+      ['3_6', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
       ['0_5', new THREE.Vector3(0, -1, 0)], // face: (SUBJECT TO CHANGE) -y
     ]);
 
@@ -63,7 +63,6 @@ class ShrinkWrapper {
 
   initHelpers() {
     this.recreateEdgeHelper();
-    // this.createVertexNormalHelper();
   }
 
   /**
@@ -81,14 +80,6 @@ class ShrinkWrapper {
      */
     this.edgeHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0x0000ff}));
     scene.add(this.edgeHelper);
-  }
-
-  /**
-   * @private
-   */
-  createVertexNormalHelper() {
-    const helper = new THREE.VertexNormalsHelper(this.mesh, 2, 0x00ff00, 1);
-    scene.add(helper);
   }
 
   /**
@@ -254,13 +245,13 @@ class ShrinkWrapper {
       if (normal) {
         // Subject to remove
         // let negNormal = normal.clone().negate();
-        // const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
-        // scene.add(arrowHelper);
+        const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
+        scene.add(arrowHelper);
 
-        // point = this.debugProjectPint(tmp, normal);
+        point = this.debugProjectPint(tmp, normal);
       }
 
-      this.debugShowPoint(tmp);
+      // this.debugShowPoint(tmp);
 
       if (point) {
         newEdge.add(point);
@@ -444,15 +435,16 @@ class NaiveBox extends THREE.Geometry {
 
     this.faces.push(new THREE.Face3(1, 0, 2));
     this.faces.push(new THREE.Face3(3, 1, 2));
-    this.faces.push(new THREE.Face3(4, 6, 0));
+    this.faces.push(new THREE.Face3(0, 4, 6));
     this.faces.push(new THREE.Face3(2, 0, 6));
+    this.faces.push(new THREE.Face3(4, 5, 7));
     this.faces.push(new THREE.Face3(6, 4, 7));
-    this.faces.push(new THREE.Face3(5, 7, 4));
-    this.faces.push(new THREE.Face3(5, 1, 7));
-    this.faces.push(new THREE.Face3(3, 7, 1));
-    this.faces.push(new THREE.Face3(3, 2, 7));
-    this.faces.push(new THREE.Face3(6, 7, 2));
-    this.faces.push(new THREE.Face3(4, 0, 5));
+    this.faces.push(new THREE.Face3(5, 1, 3));
+    this.faces.push(new THREE.Face3(7, 5, 3));
+
+    this.faces.push(new THREE.Face3(3, 2, 6));
+    this.faces.push(new THREE.Face3(7, 3, 6));
+    this.faces.push(new THREE.Face3(5, 4, 0));
     this.faces.push(new THREE.Face3(1, 5, 0));
 
     // this.computeVertexNormals();
