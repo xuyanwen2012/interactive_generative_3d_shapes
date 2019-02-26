@@ -72,6 +72,9 @@ function temp() {
   scene.add(box);
 
   createEdgeHelper(geometry);
+
+  const helper = new THREE.VertexNormalsHelper(box, 2, 0x00ff00, 1);
+  scene.add(helper);
 }
 
 /**

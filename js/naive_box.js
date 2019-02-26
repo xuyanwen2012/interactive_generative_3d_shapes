@@ -2,11 +2,13 @@ class NaiveBox extends THREE.Geometry {
   constructor() {
     super();
 
-    this.initBox();
+    this.initShrink();
   }
 
-  initBox() {
-    // Temp
+  initShrink() {
+    this.vertices.length = 0;
+    this.faces.length = 0;
+
     this.vertices.push(
       new THREE.Vector3(-0.695, 0.125, -2.04054),
       new THREE.Vector3(0.695, 0.125, -2.04054),
@@ -29,16 +31,16 @@ class NaiveBox extends THREE.Geometry {
     //   new THREE.Vector3(0.745, 0.942911, 1.895),
     // );
 
-    this.colors.push(
-      new THREE.Color(0xFF0000), // red
-      new THREE.Color(0x00FF00), // green
-      new THREE.Color(0x0000FF), // blue
-      new THREE.Color(0xFF00FF), // purple
-      new THREE.Color(0x00FFFF), // aqua
-      new THREE.Color(0xFFFF00), // yellow
-      new THREE.Color(0xFACADE), // pink
-      new THREE.Color(0xFFFFFF), // white
-    );
+    // this.colors.push(
+    //   new THREE.Color(0xFF0000), // red
+    //   new THREE.Color(0x00FF00), // green
+    //   new THREE.Color(0x0000FF), // blue
+    //   new THREE.Color(0xFF00FF), // purple
+    //   new THREE.Color(0x00FFFF), // aqua
+    //   new THREE.Color(0xFFFF00), // yellow
+    //   new THREE.Color(0xFACADE), // pink
+    //   new THREE.Color(0xFFFFFF), // white
+    // );
 
     /*
         7____6
@@ -60,6 +62,10 @@ class NaiveBox extends THREE.Geometry {
     this.faces.push(new THREE.Face3(4, 0, 5));
     this.faces.push(new THREE.Face3(1, 5, 0));
 
+    this.computeVertexNormals();
+    this.computeFaceNormals();
+    this.computeBoundingBox();
+
     this.smooth();
   }
 
@@ -68,7 +74,7 @@ class NaiveBox extends THREE.Geometry {
     let vertexIndexA = Math.min(a, b);
     let vertexIndexB = Math.max(a, b);
 
-    let key = vertexIndexA + "_" + vertexIndexB;
+    let key = `${vertexIndexA}_${vertexIndexB}`;
 
     let edge;
 
@@ -113,15 +119,12 @@ class NaiveBox extends THREE.Geometry {
     }
 
     for (i = 0, il = faces.length; i < il; i++) {
-
       face = faces[i];
 
       this.processEdge(face.a, face.b, vertices, edges, face, metaVertices);
       this.processEdge(face.b, face.c, vertices, edges, face, metaVertices);
       this.processEdge(face.c, face.a, vertices, edges, face, metaVertices);
-
     }
-
   }
 
   smooth() {
