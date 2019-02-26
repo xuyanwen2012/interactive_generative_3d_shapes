@@ -1,49 +1,12 @@
 class NaiveBox extends THREE.Geometry {
-  constructor(...args) {
+  constructor() {
     super();
-
-    // const indices = new Uint16Array([
-    //   0, 1,
-    //   1, 2,
-    //   2, 3,
-    //   3, 0,
-    //   4, 5,
-    //   5, 6,
-    //   6, 7,
-    //   7, 4,
-    //   0, 4,
-    //   1, 5,
-    //   2, 6,
-    //   3, 7
-    // ]);
-    //
-
-    /*
-        7____6
-      3/___2/|
-      | 5__|_4
-      1/___0/
-    */
-
-    const vertices = new Float32Array([
-      -0.695, 0.125, -2.04054,
-      0.695, 0.125, -2.04054,
-      -0.705, 0.691878, -1.845,
-      0.705, 0.691878, -1.845,
-      -0.665, 0.285, 2.03903,
-      0.665, 0.285, 2.03903,
-      -0.578869, 0.975, 2.045,
-      0.57887, 0.975, 2.045,
-    ]);
-
-    // this.setIndex(new THREE.BufferAttribute(indices, 1));
-    // this.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
     this.initBox();
   }
 
   initBox() {
-    // // Temp
+    // Temp
     this.vertices.push(
       new THREE.Vector3(-0.695, 0.125, -2.04054),
       new THREE.Vector3(0.695, 0.125, -2.04054),
@@ -54,6 +17,17 @@ class NaiveBox extends THREE.Geometry {
       new THREE.Vector3(-0.578869, 0.975, 2.045),
       new THREE.Vector3(0.57887, 0.975, 2.045),
     );
+
+    // this.vertices.push(
+    //   new THREE.Vector3(-0.746645, 0.235, -1.965),
+    //   new THREE.Vector3(0.746641, 0.235, -1.965),
+    //   new THREE.Vector3(-0.755, 0.735, -1.77438),
+    //   new THREE.Vector3(0.755, 0.735, -1.77438),
+    //   new THREE.Vector3(-0.791225, 0.295, 1.925),
+    //   new THREE.Vector3(0.791223, 0.295, 1.925),
+    //   new THREE.Vector3(-0.745, 0.942911, 1.895),
+    //   new THREE.Vector3(0.745, 0.942911, 1.895),
+    // );
 
     this.colors.push(
       new THREE.Color(0xFF0000), // red
