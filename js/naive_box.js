@@ -221,8 +221,9 @@ class ShrinkWrapper {
 
       tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
 
-      console.log(i, currentEdge, newEdge);
+      // console.log(i, currentEdge, newEdge);
 
+      this.debugShowPoint(tmp);
 
       /**
        * @type {Vector3}
@@ -233,7 +234,6 @@ class ShrinkWrapper {
         const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
         scene.add(arrowHelper);
 
-        this.debugShowPoint(tmp);
         this.debugProjectPint(tmp, normal);
       }
 
@@ -277,8 +277,8 @@ class ShrinkWrapper {
 
     // Toggle rotation bool for meshes that we clicked
     if (intersects.length > 0) {
-      console.log('hit');
       this.debugShowPoint(intersects[0].point, 0xFF0000);
+      console.log(intersects[0].distance)
     } else {
       console.log('missed');
     }
