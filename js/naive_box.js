@@ -188,7 +188,7 @@ class ShrinkWrapper {
    */
   shrink() {
     const ABC = ['a', 'b', 'c'];
-    let tmp = new THREE.Vector3();
+    // let tmp = new THREE.Vector3();
 
     let oldVertices, oldFaces;
     let newVertices, newFaces; // newUVs = [];
@@ -241,24 +241,26 @@ class ShrinkWrapper {
       }
 
       // IVAN: find the center point of this edge
-      // let tmp = new THREE.Vector3();
+      let tmp = new THREE.Vector3();
       tmp.set(0, 0, 0);
 
       tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
-
 
       /**
        * @type {Vector3}
        */
       let normal = this.predefinedNormals.get(i);
-      let point;
+      let point = tmp;
       if (normal) {
         // Subject to remove
-        const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
-        scene.add(arrowHelper);
+        // let negNormal = normal.clone().negate();
+        // const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
+        // scene.add(arrowHelper);
 
-        point = this.debugProjectPint(tmp, normal);
+        // point = this.debugProjectPint(tmp, normal);
       }
+
+      this.debugShowPoint(tmp);
 
       if (point) {
         newEdge.add(point);
@@ -267,7 +269,7 @@ class ShrinkWrapper {
       currentEdge.newEdge = newEdgeVertices.length;
       newEdgeVertices.push(newEdge);
 
-      // console.log(i, currentEdge, newEdge);
+      console.log(i, currentEdge, newEdge);
     }
 
     /******************************************************
@@ -309,7 +311,7 @@ class ShrinkWrapper {
     this.geometry.faces = newFaces;
 
     // this.geometry.verticesNeedUpdate = true;
-    console.log(newFaces);
+    // console.log(newFaces);
   }
 
   /**
@@ -345,7 +347,7 @@ class ShrinkWrapper {
     const dotGeometry = new THREE.Geometry();
     dotGeometry.vertices.push(pos);
     const dotMaterial = new THREE.PointsMaterial({
-      size: 0.5,
+      size: 0.1,
       color: color,
     });
     const dot = new THREE.Points(dotGeometry, dotMaterial);
@@ -355,26 +357,39 @@ class ShrinkWrapper {
   /**
    * @param vert {Vector3}
    * @param dir {Vector3}
+   * @param step {Number}
    */
-  debugProjectPint(vert, dir) {
+  debugProjectPint(vert, dir, step = 0) {
     // shot a ray from this vertex up util hit a point
     const raycaster = new THREE.Raycaster();
-    raycaster.set(vert, dir);
+
+    // flip the direction if the previous try missed.
+    let direction = dir;
+    if (step !== 0) {
+      direction = dir.clone().negate();
+    }
+
+    raycaster.set(vert, direction);
 
     const intersects = raycaster.intersectObject(this.target);
 
     // Toggle rotation bool for meshes that we clicked
     if (intersects.length > 0) {
       this.debugShowPoint(intersects[0].point, 0xFF0000);
-      console.log(intersects[0].distance);
+      // console.log(intersects[0].distance);
 
       return intersects[0].point;
 
     } else {
+      // If not found, shot a ray in opposite direction
       console.log('missed');
-
-      return null;
+      if (step === 0) {
+        return this.debugProjectPint(vert, dir, step++);
+      } else {
+        return null;
+      }
     }
+
 
   }
 }
