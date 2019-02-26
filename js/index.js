@@ -2,6 +2,8 @@
 
 // Global variables
 let camera, scene, renderer;
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
 
 // Some constants
 const frustumSize = 6;
@@ -48,9 +50,22 @@ function init() {
   loadModel('./models/1abeca7159db7ed9f200a72c9245aee7.obj');
 
   window.addEventListener('resize', onWindowResize, false);
-  document.addEventListener('mousemove', onDocumentMouseMove, false);
+  window.addEventListener('mousemove', onMouseMove, false);
 }
 
+
+function temp() {
+  let geometry = new NaiveBox();
+  const material = new THREE.PointsMaterial({
+    size: pointSize,
+    vertexColors: THREE.VertexColors
+  });
+  const points = new THREE.Points(geometry, material);
+  scene.add(points);
+
+  const helper = new THREE.VertexNormalsHelper(points, 2, 0x00ff00, 1);
+  scene.add(helper);
+}
 
 /**
  * @param path {string}
@@ -67,24 +82,48 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
     mesh.position.set(pos.x, pos.y, pos.z);
     scene.addModel(group);
 
-
-    // let points = generatePointCloudFromGeo(new THREE.Color(1, 0, 0), mesh.geometry);
-    // scene.add(points);
-    // points.position.set(pos.x + 3, pos.y, pos.z);
-
+    depth_map_mesh = mesh;
     render();
-
-    screenShot();
+    // screenShot();
+    temp();
   });
 }
 
 function render() {
   renderer.clear();
   renderer.render(scene, camera);
+
+  if (!depth_map_mesh) {
+    return;
+  }
+
+  raycaster.setFromCamera(mouse, camera);
+  // See if the ray from the camera into the world hits one of our meshes
+  const intersects = raycaster.intersectObject(depth_map_mesh);
+  // Toggle rotation bool for meshes that we clicked
+  if (intersects.length > 0) {
+    helper.position.set(0, 0, 0);
+    helper.lookAt(intersects[0].face.normal);
+    helper.position.copy(intersects[0].point);
+  }
 }
 
-function onDocumentMouseMove(event) {
+// Temp
+let helper;
+createRaycast();
+
+function createRaycast() {
+  const geometry = new THREE.ConeBufferGeometry(0.1, 0.25, 3);
+  geometry.translate(0, 0, 0);
+  geometry.rotateX(Math.PI / 2);
+  helper = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
+  scene.add(helper);
+}
+
+function onMouseMove(event) {
   event.preventDefault();
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 }
 
 function onWindowResize() {
@@ -129,6 +168,9 @@ function screenShot() {
   createDepthSurface(pixels);
   // createDepthSurface(pixels)
 }
+
+
+let depth_map_mesh;
 
 /**
  * @param pixels {Uint8Array}
@@ -182,5 +224,6 @@ function createDepthSurface(pixels) {
   // const helper = new THREE.VertexNormalsHelper(plane, 2, 0x00ff00, 1);
   // scene.add(helper);
   scene.add(plane);
+  // depth_map_mesh = plane;
 }
 
