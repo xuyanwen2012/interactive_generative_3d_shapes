@@ -63,17 +63,25 @@ class ShrinkWrapper {
   }
 
   initHelpers() {
-    this.createEdgeHelper();
+    this.recreateEdgeHelper();
     // this.createVertexNormalHelper();
   }
 
   /**
    * @private
    */
-  createEdgeHelper() {
+  recreateEdgeHelper() {
+    if (this.edgeHelper) {
+      scene.remove(this.edgeHelper);
+    }
+
     const edges = new THREE.EdgesGeometry(this.geometry);
-    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0x0000ff}));
-    scene.add(line);
+
+    /**
+     * @type {LineSegments}
+     */
+    this.edgeHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: 0x0000ff}));
+    scene.add(this.edgeHelper);
   }
 
   /**
@@ -159,7 +167,25 @@ class ShrinkWrapper {
   }
 
   /**
-   * Main function
+   * Main function to shrink wrap
+   */
+  modify() {
+    let repeats = 1;
+
+    while (repeats-- > 0) {
+      this.shrink();
+    }
+
+    delete this.geometry.__tmpVertices;
+
+    this.geometry.computeFaceNormals();
+    this.geometry.computeVertexNormals();
+
+    this.recreateEdgeHelper();
+  }
+
+  /**
+   * @private
    */
   shrink() {
     const ABC = ['a', 'b', 'c'];
@@ -222,21 +248,22 @@ class ShrinkWrapper {
       tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
 
 
-      // this.debugShowPoint(tmp);
-
       /**
        * @type {Vector3}
        */
       let normal = this.predefinedNormals.get(i);
+      let point;
       if (normal) {
         // Subject to remove
         const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
         scene.add(arrowHelper);
 
-        this.debugProjectPint(tmp, normal);
+        point = this.debugProjectPint(tmp, normal);
       }
 
-      newEdge.add(tmp);
+      if (point) {
+        newEdge.add(point);
+      }
 
       currentEdge.newEdge = newEdgeVertices.length;
       newEdgeVertices.push(newEdge);
@@ -256,10 +283,59 @@ class ShrinkWrapper {
     let sl = oldVertices.length, edge1, edge2, edge3;
     newFaces = [];
 
-    console.log(newVertices);
+    // console.log(newVertices);
 
-    newVertices.forEach(v => this.debugShowPoint(v))
+    // newVertices.forEach(v => this.debugShowPoint(v))
 
+    for (i = 0, il = oldFaces.length; i < il; i++) {
+
+      face = oldFaces[i];
+
+      // find the 3 new edges vertex of each old face
+
+      edge1 = this.getEdge(face.a, face.b, sourceEdges).newEdge + sl;
+      edge2 = this.getEdge(face.b, face.c, sourceEdges).newEdge + sl;
+      edge3 = this.getEdge(face.c, face.a, sourceEdges).newEdge + sl;
+
+      // create 4 faces.
+
+      this.newFace(newFaces, edge1, edge2, edge3);
+      this.newFace(newFaces, face.a, edge1, edge3);
+      this.newFace(newFaces, face.b, edge2, edge1);
+      this.newFace(newFaces, face.c, edge3, edge2);
+    }
+
+    // Overwrite old arrays
+    this.geometry.vertices = newVertices;
+    this.geometry.faces = newFaces;
+
+    // this.geometry.verticesNeedUpdate = true;
+    console.log(newFaces);
+  }
+
+  /**
+   * @private
+   * @param newFaces
+   * @param a
+   * @param b
+   * @param c
+   */
+  newFace(newFaces, a, b, c) {
+    newFaces.push(new THREE.Face3(a, b, c));
+  }
+
+  /**
+   * @private
+   * @param a
+   * @param b
+   * @param map
+   * @return {*}
+   */
+  getEdge(a, b, map) {
+    let vertexIndexA = Math.min(a, b);
+    let vertexIndexB = Math.max(a, b);
+    let key = `${vertexIndexA}_${vertexIndexB}`;
+    return map[key];
   }
 
   /**
@@ -291,10 +367,16 @@ class ShrinkWrapper {
     // Toggle rotation bool for meshes that we clicked
     if (intersects.length > 0) {
       this.debugShowPoint(intersects[0].point, 0xFF0000);
-      console.log(intersects[0].distance)
+      console.log(intersects[0].distance);
+
+      return intersects[0].point;
+
     } else {
       console.log('missed');
+
+      return null;
     }
+
   }
 }
 
