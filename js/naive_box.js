@@ -59,9 +59,106 @@ class NaiveBox extends THREE.Geometry {
     this.faces.push(new THREE.Face3(6, 7, 2));
     this.faces.push(new THREE.Face3(4, 0, 5));
     this.faces.push(new THREE.Face3(1, 5, 0));
+
+    this.smooth();
+  }
+
+  processEdge(a, b, vertices, map, face, metaVertices) {
+
+    let vertexIndexA = Math.min(a, b);
+    let vertexIndexB = Math.max(a, b);
+
+    let key = vertexIndexA + "_" + vertexIndexB;
+
+    let edge;
+
+    if (key in map) {
+
+      edge = map[key];
+
+    } else {
+
+      let vertexA = vertices[vertexIndexA];
+      let vertexB = vertices[vertexIndexB];
+
+      edge = {
+
+        a: vertexA, // pointer reference
+        b: vertexB,
+        newEdge: null,
+        // aIndex: a, // numbered reference
+        // bIndex: b,
+        faces: [] // pointers to face
+
+      };
+
+      map[key] = edge;
+
+    }
+
+    edge.faces.push(face);
+
+    metaVertices[a].edges.push(edge);
+    metaVertices[b].edges.push(edge);
+  }
+
+  generateLookups(vertices, faces, metaVertices, edges) {
+
+    let i, il, face, edge;
+
+    for (i = 0, il = vertices.length; i < il; i++) {
+
+      metaVertices[i] = {edges: []};
+
+    }
+
+    for (i = 0, il = faces.length; i < il; i++) {
+
+      face = faces[i];
+
+      this.processEdge(face.a, face.b, vertices, edges, face, metaVertices);
+      this.processEdge(face.b, face.c, vertices, edges, face, metaVertices);
+      this.processEdge(face.c, face.a, vertices, edges, face, metaVertices);
+
+    }
+
   }
 
   smooth() {
+    let tmp = new THREE.Vector3();
 
+    let oldVertices, oldFaces;
+    let newVertices, newFaces; // newUVs = [];
+
+    let n, l, i, il, j, k;
+    let metaVertices;
+
+    // new stuff.
+    let sourceEdges, newEdgeVertices, newSourceVertices;
+
+    oldVertices = this.vertices; // { x, y, z}
+    oldFaces = this.faces; // { a: oldVertex1, b: oldVertex2, c: oldVertex3 }
+
+    /******************************************************
+     *
+     * Step 0: Preprocess Geometry to Generate edges Lookup
+     *
+     *******************************************************/
+
+    metaVertices = new Array(oldVertices.length);
+    sourceEdges = {}; // Edge => { oldVertex1, oldVertex2, faces[]  }
+
+    this.generateLookups(oldVertices, oldFaces, metaVertices, sourceEdges);
+
+    console.log(metaVertices);
+    console.log(sourceEdges);
+
+    /******************************************************
+     *
+     *  Step 1.
+     *  For each edge, create a new Edge Vertex,
+     *  then position it.
+     *
+     *******************************************************/
   }
 }
