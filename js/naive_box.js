@@ -29,12 +29,6 @@ class ShrinkWrapper {
 
     scene.add(this.mesh);
 
-
-    /*
-
-
-
-    */
     /**
      *          7____6
      *        3/___2/|
@@ -46,9 +40,9 @@ class ShrinkWrapper {
       ['0_1', new THREE.Vector3(0, -1, -1)], // -z, -y
       ['0_2', new THREE.Vector3(-1, 0, -1)], // -x, -z
       // ['1_2', new THREE.Vector3(, ,)], // face
-      ['1_3', new THREE.Vector3(1, -1, 0)], // x, -y
+      ['1_3', new THREE.Vector3(1, 0, -1)], // x, -z
       ['2_3', new THREE.Vector3(0, 1, -1)], // -z. y
-      ['4_6', new THREE.Vector3(1, 0, 1)], // -x. z
+      ['4_6', new THREE.Vector3(-1, 0, 1)], // -x. z
       // ['0_6', new THREE.Vector3()], // face
       ['0_4', new THREE.Vector3(-1, -1, 0)], // -x. -y
       ['2_6', new THREE.Vector3(-1, 1, 0)], // -x. -y
@@ -63,14 +57,14 @@ class ShrinkWrapper {
       // ['0_5', new THREE.Vector3(1, 1, 0)], // face
     ]);
 
-    this.predefinedNormals.values().forEach(v => v.normalize());
+    this.predefinedNormals.forEach((v, key) => v.normalize());
 
     this.initHelpers();
   }
 
   initHelpers() {
     this.createEdgeHelper();
-    this.createVertexNormalHelper();
+    // this.createVertexNormalHelper();
   }
 
   /**
@@ -228,8 +222,21 @@ class ShrinkWrapper {
       tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
 
       console.log(i, currentEdge, newEdge);
-      this.debugShowPoint(tmp);
-      this.debugProjectPintUp(tmp);
+
+
+      /**
+       * @type {Vector3}
+       */
+      let normal = this.predefinedNormals.get(i);
+      if (normal) {
+        // Subject to remove
+        const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
+        scene.add(arrowHelper);
+
+        this.debugShowPoint(tmp);
+        this.debugProjectPint(tmp, normal);
+      }
+
     }
 
 
@@ -259,11 +266,12 @@ class ShrinkWrapper {
 
   /**
    * @param vert {Vector3}
+   * @param dir {Vector3}
    */
-  debugProjectPintUp(vert) {
+  debugProjectPint(vert, dir) {
     // shot a ray from this vertex up util hit a point
     const raycaster = new THREE.Raycaster();
-    raycaster.set(vert, new THREE.Vector3(0, 1, 0));
+    raycaster.set(vert, dir);
 
     const intersects = raycaster.intersectObject(this.target);
 
@@ -338,8 +346,8 @@ class NaiveBox extends THREE.Geometry {
     this.faces.push(new THREE.Face3(4, 0, 5));
     this.faces.push(new THREE.Face3(1, 5, 0));
 
-    this.computeVertexNormals();
-    this.computeFaceNormals();
-    this.computeBoundingBox();
+    // this.computeVertexNormals();
+    // this.computeFaceNormals();
+    // this.computeBoundingBox();
   }
 }
