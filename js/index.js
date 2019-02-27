@@ -74,7 +74,7 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
     // screenShot();
 
     const jjj = new ShrinkWrapper(mesh);
-    // jjj.modify();
+    jjj.modify();
   });
 }
 

@@ -11,9 +11,8 @@ class ShrinkWrapper {
     this.target = target;
 
     /**
-     * @type {NaiveBox}
+     * @type {QuadBox}
      */
-    // this.geometry = new NaiveBox();
     this.geometry = new QuadBox();
 
     /**
@@ -39,22 +38,22 @@ class ShrinkWrapper {
     this.predefinedNormals = new Map([
       ['0_1', new THREE.Vector3(0, -1, -1)], // -z, -y
       ['0_2', new THREE.Vector3(-1, 0, -1)], // -x, -z
-      ['1_2', new THREE.Vector3(0, 0, -1)], // face: (SUBJECT TO CHANGE) -z
+      ['0_3', new THREE.Vector3(0, 0, -1)], // face: (SUBJECT TO CHANGE) -z
       ['1_3', new THREE.Vector3(1, 0, -1)], // x, -z
       ['2_3', new THREE.Vector3(0, 1, -1)], // -z. y
       ['4_6', new THREE.Vector3(-1, 0, 1)], // -x. z
-      ['0_6', new THREE.Vector3(-1, 0, 0)], // face: (SUBJECT TO CHANGE) -x
+      ['2_4', new THREE.Vector3(-1, 0, 0)], // face: (SUBJECT TO CHANGE) -x
       ['0_4', new THREE.Vector3(-1, -1, 0)], // -x. -y
       ['2_6', new THREE.Vector3(-1, 1, 0)], // -x. -y
-      ['4_7', new THREE.Vector3(0, 0, 1)], // face: (SUBJECT TO CHANGE) z
+      ['5_6', new THREE.Vector3(0, 0, 1)], // face: (SUBJECT TO CHANGE) z
       ['6_7', new THREE.Vector3(0, 1, 1)], // y,z
       ['5_7', new THREE.Vector3(1, 0, 1)], // x,z
       ['4_5', new THREE.Vector3(0, -1, 1)], // -y,z
       ['1_5', new THREE.Vector3(1, -1, 0)], // x,-y
-      ['3_5', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
+      ['1_7', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
       ['3_7', new THREE.Vector3(1, 1, 0)], // x,y
-      ['3_6', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
-      ['0_5', new THREE.Vector3(0, -1, 0)], // face: (SUBJECT TO CHANGE) -y
+      ['2_7', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
+      ['1_4', new THREE.Vector3(0, -1, 0)], // face: (SUBJECT TO CHANGE) -y
     ]);
 
     this.predefinedNormals.forEach((v, key) => v.normalize());
@@ -74,7 +73,7 @@ class ShrinkWrapper {
       scene.remove(this.edgeHelper);
     }
 
-    const edges = new THREE.EdgesGeometry(this.geometry);
+    const edges = new THREE.EdgesGeometry(this.geometry, 0); // show all edge
 
     /**
      * @type {LineSegments}
@@ -157,7 +156,7 @@ class ShrinkWrapper {
    * Main function to shrink wrap
    */
   modify() {
-    let repeats = 2;
+    let repeats = 1;
 
     while (repeats-- > 0) {
       this.shrink();
