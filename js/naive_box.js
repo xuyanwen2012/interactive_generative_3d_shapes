@@ -13,7 +13,8 @@ class ShrinkWrapper {
     /**
      * @type {NaiveBox}
      */
-    this.geometry = new NaiveBox();
+    // this.geometry = new NaiveBox();
+    this.geometry = new QuadBox();
 
     /**
      * @type {MeshBasicMaterial}
@@ -110,14 +111,10 @@ class ShrinkWrapper {
       let vertexB = vertices[vertexIndexB];
 
       edge = {
-
         a: vertexA, // pointer reference
         b: vertexB,
         newEdge: null,
-        // aIndex: a, // numbered reference
-        // bIndex: b,
         faces: [] // pointers to face
-
       };
 
       map[key] = edge;
@@ -160,7 +157,7 @@ class ShrinkWrapper {
    * Main function to shrink wrap
    */
   modify() {
-    let repeats = 1;
+    let repeats = 2;
 
     while (repeats-- > 0) {
       this.shrink();
@@ -251,7 +248,7 @@ class ShrinkWrapper {
         point = this.debugProjectPint(tmp, normal);
       }
 
-      // this.debugShowPoint(tmp);
+      this.debugShowPoint(tmp);
 
       if (point) {
         newEdge.add(point);
@@ -387,6 +384,41 @@ class ShrinkWrapper {
   }
 }
 
+class QuadBox extends THREE.Geometry {
+  constructor() {
+    super();
+
+    this.vertices.push(
+      new THREE.Vector3(-0.695, 0.125, -2.04054),
+      new THREE.Vector3(0.695, 0.125, -2.04054),
+      new THREE.Vector3(-0.705, 0.691878, -1.845),
+      new THREE.Vector3(0.705, 0.691878, -1.845),
+      new THREE.Vector3(-0.665, 0.285, 2.03903),
+      new THREE.Vector3(0.665, 0.285, 2.03903),
+      new THREE.Vector3(-0.578869, 0.975, 2.045),
+      new THREE.Vector3(0.57887, 0.975, 2.045),
+    );
+
+    this.drawQuadFace(3, 1, 0, 2);
+    this.drawQuadFace(2, 0, 4, 6);
+    this.drawQuadFace(6, 4, 5, 7);
+    this.drawQuadFace(7, 5, 1, 3);
+    this.drawQuadFace(7, 3, 2, 6);
+    this.drawQuadFace(1, 5, 4, 0);
+
+    this.computeFaceNormals();
+    this.computeVertexNormals();
+  }
+
+  drawQuadFace(a, b, c, d) {
+    this.drawTriFace(a, b, c);
+    this.drawTriFace(c, d, a);
+  }
+
+  drawTriFace(a, b, c) {
+    this.faces.push(new THREE.Face3(a, b, c));
+  }
+}
 
 class NaiveBox extends THREE.Geometry {
   constructor() {
