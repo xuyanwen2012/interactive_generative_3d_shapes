@@ -76,6 +76,11 @@ class ShrinkWrapper {
     // this.predefinedNormals.forEach((v, key) => v.normalize());
 
     this.initHelpers();
+
+    /**
+     * @type {Array}
+     */
+    this.output = [];
   }
 
   initHelpers() {
@@ -154,8 +159,7 @@ class ShrinkWrapper {
   /**
    * Main function to shrink wrap
    */
-  modify() {
-    let repeats = 5;
+  modify(repeats = 5) {
 
     while (repeats-- > 0) {
       this.shrink();
@@ -399,15 +403,17 @@ class ShrinkWrapper {
     if (intersects.length > 0) {
       // this.debugShowPoint(intersects[0].point, 0xFF0000);
       // console.log(intersects[0].distance);
+      this.output.push(intersects[0].distance);
 
       return intersects[0].point;
 
     } else {
       // If not found, shot a ray in opposite direction
-      console.log('missed');
       if (step === 0) {
         return this.debugProjectPint(vert, dir, step + 1);
       } else {
+        console.log('missed');
+
         return null;
       }
     }

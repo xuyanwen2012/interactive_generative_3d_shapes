@@ -1,5 +1,5 @@
 'use strict';
-
+const {PerformanceObserver, performance} = require('perf_hooks');
 const fs = require('fs');
 const path = require('path');
 const THREE = require('three');
@@ -16,13 +16,18 @@ function bufferFile(relPath) {
   return fs.readFileSync(path.join(__dirname, relPath));
 }
 
-const loader = new THREE.ObjectLoader();
+const loader = new THREE.OBJLoader();
 
-let json = BUFFER.toJSON();
-console.log(json);
+let text = BUFFER.toString();
 
-// let model = loader.parse(json);
-// console.log(model);
+let scene = new THREE.Scene();
+let group = loader.parse(text);
+let mesh = group.children[0];
+mesh.material = new THREE.MeshNormalMaterial();
+mesh.position.set(0, 0, 0);
+mesh.updateMatrixWorld(true);
+group.updateMatrixWorld(true);
+scene.add(mesh);
 
 class NaiveBox extends THREE.Geometry {
   constructor() {
@@ -200,9 +205,9 @@ class ShrinkWrapper {
 
   /**
    * Main function to shrink wrap
+   * @param repeats {Number}
    */
-  modify() {
-    let repeats = 5;
+  modify(repeats = 5) {
 
     while (repeats-- > 0) {
       this.shrink();
@@ -222,7 +227,6 @@ class ShrinkWrapper {
     let newVertices, newFaces, newVerticiesNormals; // newUVs = [];
 
     let i, il;
-    let metaVertices;
 
     // new stuff.
     let sourceEdges, newEdgeVertices;
@@ -237,12 +241,10 @@ class ShrinkWrapper {
      *
      *******************************************************/
 
-    metaVertices = new Array(oldVertices.length);
     sourceEdges = {}; // Edge => { oldVertex1, oldVertex2, faces[]  }
 
     this.generateLookups(oldVertices, oldFaces, sourceEdges);
 
-    // console.log(metaVertices);
     // console.log(sourceEdges);
 
     /******************************************************
@@ -287,8 +289,6 @@ class ShrinkWrapper {
       let bIndex = parseInt(fff[1]);
       let normalA = this.geometry.vertexNormals[aIndex];
       let normalB = this.geometry.vertexNormals[bIndex];
-      // scene.add(new THREE.ArrowHelper(normalA, currentEdge.a, 1, 0xffff00));
-      // scene.add(new THREE.ArrowHelper(normalB, currentEdge.b, 1, 0xffff00));
 
       // calculate normal
       let tmpNormal = new THREE.Vector3();
@@ -296,14 +296,9 @@ class ShrinkWrapper {
       tmpNormal.addVectors(normalA, normalB).divideScalar(2).normalize();
 
       if (tmpNormal) {
-        // Subject to remove
-        // const arrowHelper = new THREE.ArrowHelper(tmpNormal, tmp, 1, 0xffff00);
-        // scene.add(arrowHelper);
-
         point = this.debugProjectPint(tmp, tmpNormal);
       }
 
-      // this.debugShowPoint(tmp);
 
       if (point) {
         newEdge.add(point);
@@ -395,14 +390,26 @@ class ShrinkWrapper {
         return null;
       }
     }
-
-
   }
 }
 
-let geometry = new THREE.BoxGeometry(1, 1, 1);
-let material = new THREE.MeshBasicMaterial({color: 0x00ff00});
-let cube = new THREE.Mesh(geometry, material);
-let wrapper = new ShrinkWrapper(cube);
-// wrapper.modify();
-// console.log(wrapper.output.length);
+function main() {
+  let wrapper = new ShrinkWrapper(mesh);
+  wrapper.modify(1);
+  console.log(`Processed ${wrapper.output.length} vertices.`);
+}
+
+const wrapped = performance.timerify(main);
+
+const obs = new PerformanceObserver((list) => {
+  console.log(list.getEntries()[0].duration);
+  obs.disconnect();
+});
+obs.observe({entryTypes: ['function']});
+
+// A performance timeline entry will be created
+wrapped();
+
+
+
+
