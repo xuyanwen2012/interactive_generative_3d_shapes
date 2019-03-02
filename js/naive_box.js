@@ -89,10 +89,8 @@ class ShrinkWrapper {
    * @param vertices
    * @param map
    * @param face
-   * @param metaVertices
    */
-  processEdge(a, b, vertices, map, face, metaVertices) {
-
+  processEdge(a, b, vertices, map, face) {
     let vertexIndexA = Math.min(a, b);
     let vertexIndexB = Math.max(a, b);
 
@@ -117,39 +115,23 @@ class ShrinkWrapper {
       };
 
       map[key] = edge;
-
     }
 
     edge.faces.push(face);
-
-    metaVertices[a].edges.push(edge);
-    metaVertices[b].edges.push(edge);
   }
 
   /**
    * @private
    * @param vertices
    * @param faces
-   * @param metaVertices
    * @param edges
    */
-  generateLookups(vertices, faces, metaVertices, edges) {
-
-    let i, il, face, edge;
-
-    for (i = 0, il = vertices.length; i < il; i++) {
-
-      metaVertices[i] = {edges: []};
-
-    }
-
-    for (i = 0, il = faces.length; i < il; i++) {
-      face = faces[i];
-
-      this.processEdge(face.a, face.b, vertices, edges, face, metaVertices);
-      this.processEdge(face.b, face.c, vertices, edges, face, metaVertices);
-      this.processEdge(face.c, face.a, vertices, edges, face, metaVertices);
-    }
+  generateLookups(vertices, faces, edges) {
+    faces.forEach(face => {
+      this.processEdge(face.a, face.b, vertices, edges, face);
+      this.processEdge(face.b, face.c, vertices, edges, face);
+      this.processEdge(face.c, face.a, vertices, edges, face);
+    });
   }
 
   /**
@@ -159,7 +141,7 @@ class ShrinkWrapper {
     let repeats = 1;
 
     while (repeats-- > 0) {
-      this.shrink();
+      this.shrink2();
     }
 
     delete this.geometry.__tmpVertices;
@@ -170,21 +152,36 @@ class ShrinkWrapper {
     this.recreateEdgeHelper();
   }
 
+
+  shrink2() {
+    let oldVertices = this.geometry.vertices; // { x, y, z}
+    let oldFaces = this.geometry.faces; // { a, b, c }
+    let oldQuads = this.geometry.quads;
+    let sourceEdges = {}; // Edge => { oldVertex1, oldVertex2, faces[]  }
+
+    // Preprocess
+    oldQuads.forEach(quads => {
+      // this.processEdge(quads.a, quads.b, oldVertices, sourceEdges, )
+      // this.processEdge(face.a, face.b, vertices, edges, face);
+      // this.processEdge(face.b, face.c, vertices, edges, face);
+      // this.processEdge(face.c, face.a, vertices, edges, face);
+    });
+
+    console.log(sourceEdges);
+  }
+
   /**
    * @private
    */
   shrink() {
-    const ABC = ['a', 'b', 'c'];
-    // let tmp = new THREE.Vector3();
-
     let oldVertices, oldFaces;
     let newVertices, newFaces; // newUVs = [];
 
-    let n, l, i, il, j, k;
+    let i, il;
     let metaVertices;
 
     // new stuff.
-    let sourceEdges, newEdgeVertices, newSourceVertices;
+    let sourceEdges, newEdgeVertices;
 
     oldVertices = this.geometry.vertices; // { x, y, z}
     oldFaces = this.geometry.faces; // { a: oldVertex1, b: oldVertex2, c: oldVertex3 }
@@ -212,7 +209,7 @@ class ShrinkWrapper {
      *******************************************************/
 
     newEdgeVertices = [];
-    let other, currentEdge, newEdge, face;
+    let currentEdge, newEdge, face;
     let connectedFaces;
 
     for (i in sourceEdges) {
@@ -259,48 +256,48 @@ class ShrinkWrapper {
       console.log(i, currentEdge, newEdge);
     }
 
-    /******************************************************
-     *
-     *  Step 3.
-     *  Generate Faces between source vertecies
-     *  and edge vertices.
-     *
-     *******************************************************/
-
-    newVertices = oldVertices.concat(newEdgeVertices);
-    let sl = oldVertices.length, edge1, edge2, edge3;
-    newFaces = [];
-
-    // console.log(newVertices);
-
-    for (i = 0, il = oldFaces.length; i < il; i++) {
-
-      face = oldFaces[i];
-
-      // find the 3 new edges vertex of each old face
-      // Edge => { oldVertex1, oldVertex2, faces[]  }
-
-      edge1 = this.getEdge(face.a, face.b, sourceEdges).newEdge + sl;
-      edge2 = this.getEdge(face.b, face.c, sourceEdges).newEdge + sl;
-      edge3 = this.getEdge(face.c, face.a, sourceEdges).newEdge + sl;
-
-      // console.log(`${edge1.a}_${edge1.b}`);
-      console.log(this.getEdge(face.a, face.b, sourceEdges));
-
-      // create 4 faces.
-
-      this.newFace(newFaces, edge1, edge2, edge3);
-      this.newFace(newFaces, face.a, edge1, edge3);
-      this.newFace(newFaces, face.b, edge2, edge1);
-      this.newFace(newFaces, face.c, edge3, edge2);
-    }
-
-    // Overwrite old arrays
-    this.geometry.vertices = newVertices;
-    this.geometry.faces = newFaces;
-
-    // this.geometry.verticesNeedUpdate = true;
-    // console.log(newFaces);
+    // /******************************************************
+    //  *
+    //  *  Step 3.
+    //  *  Generate Faces between source vertecies
+    //  *  and edge vertices.
+    //  *
+    //  *******************************************************/
+    //
+    // newVertices = oldVertices.concat(newEdgeVertices);
+    // let sl = oldVertices.length, edge1, edge2, edge3;
+    // newFaces = [];
+    //
+    // // console.log(newVertices);
+    //
+    // for (i = 0, il = oldFaces.length; i < il; i++) {
+    //
+    //   face = oldFaces[i];
+    //
+    //   // find the 3 new edges vertex of each old face
+    //   // Edge => { oldVertex1, oldVertex2, faces[]  }
+    //
+    //   edge1 = this.getEdge(face.a, face.b, sourceEdges).newEdge + sl;
+    //   edge2 = this.getEdge(face.b, face.c, sourceEdges).newEdge + sl;
+    //   edge3 = this.getEdge(face.c, face.a, sourceEdges).newEdge + sl;
+    //
+    //   // console.log(`${edge1.a}_${edge1.b}`);
+    //   console.log(this.getEdge(face.a, face.b, sourceEdges));
+    //
+    //   // create 4 faces.
+    //
+    //   this.newFace(newFaces, edge1, edge2, edge3);
+    //   this.newFace(newFaces, face.a, edge1, edge3);
+    //   this.newFace(newFaces, face.b, edge2, edge1);
+    //   this.newFace(newFaces, face.c, edge3, edge2);
+    // }
+    //
+    // // Overwrite old arrays
+    // this.geometry.vertices = newVertices;
+    // this.geometry.faces = newFaces;
+    //
+    // // this.geometry.verticesNeedUpdate = true;
+    // // console.log(newFaces);
   }
 
   /**
@@ -383,6 +380,12 @@ class ShrinkWrapper {
   }
 }
 
+class Quad {
+  constructor(a, b, c, d) {
+
+  }
+}
+
 class QuadBox extends THREE.Geometry {
   constructor() {
     super();
@@ -398,18 +401,31 @@ class QuadBox extends THREE.Geometry {
       new THREE.Vector3(0.57887, 0.975, 2.045),
     );
 
-    this.drawQuadFace(3, 1, 0, 2);
-    this.drawQuadFace(2, 0, 4, 6);
-    this.drawQuadFace(6, 4, 5, 7);
-    this.drawQuadFace(7, 5, 1, 3);
-    this.drawQuadFace(7, 3, 2, 6);
-    this.drawQuadFace(1, 5, 4, 0);
+    /**
+     * @type {Array.<{a,b,c,d}>}
+     */
+    this.quads = [
+      {a: 3, b: 1, c: 0, d: 2},
+      {a: 2, b: 0, c: 4, d: 6},
+      {a: 6, b: 4, c: 5, d: 7},
+      {a: 7, b: 5, c: 1, d: 3},
+      {a: 7, b: 3, c: 2, d: 6},
+      {a: 1, b: 5, c: 4, d: 0},
+    ]; // {a, b, c, d}
+
+    this.quads.forEach(quad => this.drawQuadFace(quad));
 
     this.computeFaceNormals();
     this.computeVertexNormals();
   }
 
-  drawQuadFace(a, b, c, d) {
+  drawQuadFace({a, b, c, d}) {
+
+    /*
+     *  a - d
+     *  | \ |
+     *  b - c
+     */
     this.drawTriFace(a, b, c);
     this.drawTriFace(c, d, a);
   }
@@ -417,6 +433,8 @@ class QuadBox extends THREE.Geometry {
   drawTriFace(a, b, c) {
     this.faces.push(new THREE.Face3(a, b, c));
   }
+
+
 }
 
 class NaiveBox extends THREE.Geometry {
