@@ -155,7 +155,7 @@ class ShrinkWrapper {
    * Main function to shrink wrap
    */
   modify() {
-    let repeats = 1;
+    let repeats = 5;
 
     while (repeats-- > 0) {
       this.shrink();
@@ -270,13 +270,13 @@ class ShrinkWrapper {
 
       if (tmpNormal) {
         // Subject to remove
-        const arrowHelper = new THREE.ArrowHelper(tmpNormal, tmp, 1, 0xffff00);
-        scene.add(arrowHelper);
+        // const arrowHelper = new THREE.ArrowHelper(tmpNormal, tmp, 1, 0xffff00);
+        // scene.add(arrowHelper);
 
         point = this.debugProjectPint(tmp, tmpNormal);
       }
 
-      this.debugShowPoint(tmp);
+      // this.debugShowPoint(tmp);
 
       if (point) {
         newEdge.add(point);
@@ -397,7 +397,7 @@ class ShrinkWrapper {
 
     // Toggle rotation bool for meshes that we clicked
     if (intersects.length > 0) {
-      this.debugShowPoint(intersects[0].point, 0xFF0000);
+      // this.debugShowPoint(intersects[0].point, 0xFF0000);
       // console.log(intersects[0].distance);
 
       return intersects[0].point;
@@ -406,7 +406,7 @@ class ShrinkWrapper {
       // If not found, shot a ray in opposite direction
       console.log('missed');
       if (step === 0) {
-        return this.debugProjectPint(vert, dir, step++);
+        return this.debugProjectPint(vert, dir, step + 1);
       } else {
         return null;
       }
