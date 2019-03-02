@@ -23,11 +23,13 @@ function initGUI() {
 
   let obj = {
     show: () => scene.showHelpers(),
-    hide: () => scene.hideHelpers()
+    hide: () => scene.hideHelpers(),
+    shrink: () => doShrinkWrap()
   };
 
   gui.add(obj, 'show');
   gui.add(obj, 'hide');
+  gui.add(obj, 'shrink');
 }
 
 function init() {
@@ -53,6 +55,12 @@ function init() {
   window.addEventListener('mousemove', onMouseMove, false);
 }
 
+let loadedModel;
+
+function doShrinkWrap() {
+  const jjj = new ShrinkWrapper(loadedModel);
+  jjj.modify();
+}
 
 /**
  * @param path {string}
@@ -72,9 +80,8 @@ function loadModel(path, pos = new THREE.Vector3(0, 0, 0)) {
     depth_map_mesh = mesh;
     render();
     // screenShot();
+    loadedModel = mesh;
 
-    const jjj = new ShrinkWrapper(mesh);
-    jjj.modify();
   });
 }
 

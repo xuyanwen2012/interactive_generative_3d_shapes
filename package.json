@@ -1,7 +1,9 @@
 {
   "name": "threeProject",
   "version": "1.0.0",
-  "dependencies": {},
+  "dependencies": {
+    "three": "^0.102.0"
+  },
   "devDependencies": {
     "bluebird": "^3.5.3"
   }

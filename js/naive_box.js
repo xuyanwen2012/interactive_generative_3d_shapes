@@ -73,13 +73,13 @@ class ShrinkWrapper {
 
     ]);
 
-    this.predefinedNormals.forEach((v, key) => v.normalize());
+    // this.predefinedNormals.forEach((v, key) => v.normalize());
 
     this.initHelpers();
   }
 
   initHelpers() {
-    this.recreateEdgeHelper();
+    // this.recreateEdgeHelper();
   }
 
   /**
@@ -166,7 +166,7 @@ class ShrinkWrapper {
     this.geometry.computeFaceNormals();
     this.geometry.computeVertexNormals();
 
-    this.recreateEdgeHelper();
+    // this.recreateEdgeHelper();
   }
 
 
@@ -184,7 +184,7 @@ class ShrinkWrapper {
       // this.processEdge(face.c, face.a, vertices, edges, face);
     });
 
-    console.log(sourceEdges);
+    // console.log(sourceEdges);
   }
 
   /**
@@ -215,8 +215,8 @@ class ShrinkWrapper {
 
     this.generateLookups(oldVertices, oldFaces, sourceEdges);
 
-    console.log(metaVertices);
-    console.log(sourceEdges);
+    // console.log(metaVertices);
+    // console.log(sourceEdges);
 
     /******************************************************
      *
@@ -287,7 +287,7 @@ class ShrinkWrapper {
       newEdgeVertices.push(newEdge);
       newVerticiesNormals.push(tmpNormal);
 
-      console.log(i, currentEdge, newEdge);
+      // console.log(i, currentEdge, newEdge);
     }
 
     /******************************************************
