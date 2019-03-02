@@ -10,10 +10,7 @@ class ShrinkWrapper {
      */
     this.target = target;
 
-    /**
-     * @type {QuadBox}
-     */
-    this.geometry = new QuadBox();
+    this.geometry = new NaiveBox();
 
     /**
      * @type {MeshBasicMaterial}
@@ -38,22 +35,42 @@ class ShrinkWrapper {
     this.predefinedNormals = new Map([
       ['0_1', new THREE.Vector3(0, -1, -1)], // -z, -y
       ['0_2', new THREE.Vector3(-1, 0, -1)], // -x, -z
-      ['0_3', new THREE.Vector3(0, 0, -1)], // face: (SUBJECT TO CHANGE) -z
+      ['1_2', new THREE.Vector3(0, 0, -1)], // face: (SUBJECT TO CHANGE) -z
       ['1_3', new THREE.Vector3(1, 0, -1)], // x, -z
       ['2_3', new THREE.Vector3(0, 1, -1)], // -z. y
       ['4_6', new THREE.Vector3(-1, 0, 1)], // -x. z
-      ['2_4', new THREE.Vector3(-1, 0, 0)], // face: (SUBJECT TO CHANGE) -x
+      ['0_6', new THREE.Vector3(-1, 0, 0)], // face: (SUBJECT TO CHANGE) -x
       ['0_4', new THREE.Vector3(-1, -1, 0)], // -x. -y
       ['2_6', new THREE.Vector3(-1, 1, 0)], // -x. -y
-      ['5_6', new THREE.Vector3(0, 0, 1)], // face: (SUBJECT TO CHANGE) z
+      ['4_7', new THREE.Vector3(0, 0, 1)], // face: (SUBJECT TO CHANGE) z
       ['6_7', new THREE.Vector3(0, 1, 1)], // y,z
       ['5_7', new THREE.Vector3(1, 0, 1)], // x,z
       ['4_5', new THREE.Vector3(0, -1, 1)], // -y,z
       ['1_5', new THREE.Vector3(1, -1, 0)], // x,-y
-      ['1_7', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
+      ['3_5', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
       ['3_7', new THREE.Vector3(1, 1, 0)], // x,y
-      ['2_7', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
-      ['1_4', new THREE.Vector3(0, -1, 0)], // face: (SUBJECT TO CHANGE) -y
+      ['3_6', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
+      ['0_5', new THREE.Vector3(0, -1, 0)], // face: (SUBJECT TO CHANGE) -y
+
+      // ['0_1', new THREE.Vector3(0, -1, -1)], // -z, -y
+      // ['0_2', new THREE.Vector3(-1, 0, -1)], // -x, -z
+      // ['0_3', new THREE.Vector3(0, 0, -1)], // face: (SUBJECT TO CHANGE) -z
+      // ['1_3', new THREE.Vector3(1, 0, -1)], // x, -z
+      // ['2_3', new THREE.Vector3(0, 1, -1)], // -z. y
+      // ['4_6', new THREE.Vector3(-1, 0, 1)], // -x. z
+      // ['2_4', new THREE.Vector3(-1, 0, 0)], // face: (SUBJECT TO CHANGE) -x
+      // ['0_4', new THREE.Vector3(-1, -1, 0)], // -x. -y
+      // ['2_6', new THREE.Vector3(-1, 1, 0)], // -x. -y
+      // ['5_6', new THREE.Vector3(0, 0, 1)], // face: (SUBJECT TO CHANGE) z
+      // ['6_7', new THREE.Vector3(0, 1, 1)], // y,z
+      // ['5_7', new THREE.Vector3(1, 0, 1)], // x,z
+      // ['4_5', new THREE.Vector3(0, -1, 1)], // -y,z
+      // ['1_5', new THREE.Vector3(1, -1, 0)], // x,-y
+      // ['1_7', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
+      // ['3_7', new THREE.Vector3(1, 1, 0)], // x,y
+      // ['2_7', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
+      // ['1_4', new THREE.Vector3(0, -1, 0)], // face: (SUBJECT TO CHANGE) -y
+
     ]);
 
     this.predefinedNormals.forEach((v, key) => v.normalize());
@@ -141,7 +158,7 @@ class ShrinkWrapper {
     let repeats = 1;
 
     while (repeats-- > 0) {
-      this.shrink2();
+      this.shrink();
     }
 
     delete this.geometry.__tmpVertices;
@@ -195,7 +212,7 @@ class ShrinkWrapper {
     metaVertices = new Array(oldVertices.length);
     sourceEdges = {}; // Edge => { oldVertex1, oldVertex2, faces[]  }
 
-    this.generateLookups(oldVertices, oldFaces, metaVertices, sourceEdges);
+    this.generateLookups(oldVertices, oldFaces, sourceEdges);
 
     console.log(metaVertices);
     console.log(sourceEdges);
@@ -256,48 +273,48 @@ class ShrinkWrapper {
       console.log(i, currentEdge, newEdge);
     }
 
-    // /******************************************************
-    //  *
-    //  *  Step 3.
-    //  *  Generate Faces between source vertecies
-    //  *  and edge vertices.
-    //  *
-    //  *******************************************************/
-    //
-    // newVertices = oldVertices.concat(newEdgeVertices);
-    // let sl = oldVertices.length, edge1, edge2, edge3;
-    // newFaces = [];
-    //
-    // // console.log(newVertices);
-    //
-    // for (i = 0, il = oldFaces.length; i < il; i++) {
-    //
-    //   face = oldFaces[i];
-    //
-    //   // find the 3 new edges vertex of each old face
-    //   // Edge => { oldVertex1, oldVertex2, faces[]  }
-    //
-    //   edge1 = this.getEdge(face.a, face.b, sourceEdges).newEdge + sl;
-    //   edge2 = this.getEdge(face.b, face.c, sourceEdges).newEdge + sl;
-    //   edge3 = this.getEdge(face.c, face.a, sourceEdges).newEdge + sl;
-    //
-    //   // console.log(`${edge1.a}_${edge1.b}`);
-    //   console.log(this.getEdge(face.a, face.b, sourceEdges));
-    //
-    //   // create 4 faces.
-    //
-    //   this.newFace(newFaces, edge1, edge2, edge3);
-    //   this.newFace(newFaces, face.a, edge1, edge3);
-    //   this.newFace(newFaces, face.b, edge2, edge1);
-    //   this.newFace(newFaces, face.c, edge3, edge2);
-    // }
-    //
-    // // Overwrite old arrays
-    // this.geometry.vertices = newVertices;
-    // this.geometry.faces = newFaces;
-    //
-    // // this.geometry.verticesNeedUpdate = true;
-    // // console.log(newFaces);
+    /******************************************************
+     *
+     *  Step 3.
+     *  Generate Faces between source vertecies
+     *  and edge vertices.
+     *
+     *******************************************************/
+
+    newVertices = oldVertices.concat(newEdgeVertices);
+    let sl = oldVertices.length, edge1, edge2, edge3;
+    newFaces = [];
+
+    // console.log(newVertices);
+
+    for (i = 0, il = oldFaces.length; i < il; i++) {
+
+      face = oldFaces[i];
+
+      // find the 3 new edges vertex of each old face
+      // Edge => { oldVertex1, oldVertex2, faces[]  }
+
+      edge1 = this.getEdge(face.a, face.b, sourceEdges).newEdge + sl;
+      edge2 = this.getEdge(face.b, face.c, sourceEdges).newEdge + sl;
+      edge3 = this.getEdge(face.c, face.a, sourceEdges).newEdge + sl;
+
+      // console.log(`${edge1.a}_${edge1.b}`);
+      // console.log(this.getEdge(face.a, face.b, sourceEdges));
+
+      // create 4 faces.
+
+      this.newFace(newFaces, edge1, edge2, edge3);
+      this.newFace(newFaces, face.a, edge1, edge3);
+      this.newFace(newFaces, face.b, edge2, edge1);
+      this.newFace(newFaces, face.c, edge3, edge2);
+    }
+
+    // Overwrite old arrays
+    this.geometry.vertices = newVertices;
+    this.geometry.faces = newFaces;
+
+    // this.geometry.verticesNeedUpdate = true;
+    // console.log(newFaces);
   }
 
   /**
@@ -376,12 +393,6 @@ class ShrinkWrapper {
       }
     }
 
-
-  }
-}
-
-class Quad {
-  constructor(a, b, c, d) {
 
   }
 }
