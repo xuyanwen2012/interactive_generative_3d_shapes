@@ -191,8 +191,8 @@ class ShrinkWrapper {
    * @private
    */
   shrink() {
-    let oldVertices, oldFaces;
-    let newVertices, newFaces; // newUVs = [];
+    let oldVertices, oldFaces, oldVerticiesNormal;
+    let newVertices, newFaces, newVerticiesNormals; // newUVs = [];
 
     let i, il;
     let metaVertices;
@@ -201,6 +201,7 @@ class ShrinkWrapper {
     let sourceEdges, newEdgeVertices;
 
     oldVertices = this.geometry.vertices; // { x, y, z}
+    oldVerticiesNormal = this.geometry.vertexNormals;
     oldFaces = this.geometry.faces; // { a: oldVertex1, b: oldVertex2, c: oldVertex3 }
 
     /******************************************************
@@ -226,6 +227,7 @@ class ShrinkWrapper {
      *******************************************************/
 
     newEdgeVertices = [];
+    newVerticiesNormals = [];
     let currentEdge, newEdge, face;
     let connectedFaces;
 
@@ -244,21 +246,34 @@ class ShrinkWrapper {
       // IVAN: find the center point of this edge
       let tmp = new THREE.Vector3();
       tmp.set(0, 0, 0);
-
       tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
 
       /**
        * @type {Vector3}
        */
-      let normal = this.predefinedNormals.get(i);
+        // let normal = this.predefinedNormals.get(i);
       let point = tmp;
-      if (normal) {
+
+      // show vertex normal
+      let fff = i.split('_');
+      let aIndex = parseInt(fff[0]);
+      let bIndex = parseInt(fff[1]);
+      let normalA = this.geometry.vertexNormals[aIndex];
+      let normalB = this.geometry.vertexNormals[bIndex];
+      // scene.add(new THREE.ArrowHelper(normalA, currentEdge.a, 1, 0xffff00));
+      // scene.add(new THREE.ArrowHelper(normalB, currentEdge.b, 1, 0xffff00));
+
+      // calculate normal
+      let tmpNormal = new THREE.Vector3();
+      tmpNormal.set(0, 0, 0);
+      tmpNormal.addVectors(normalA, normalB).divideScalar(2).normalize();
+
+      if (tmpNormal) {
         // Subject to remove
-        // let negNormal = normal.clone().negate();
-        const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
+        const arrowHelper = new THREE.ArrowHelper(tmpNormal, tmp, 1, 0xffff00);
         scene.add(arrowHelper);
 
-        point = this.debugProjectPint(tmp, normal);
+        point = this.debugProjectPint(tmp, tmpNormal);
       }
 
       this.debugShowPoint(tmp);
@@ -268,7 +283,9 @@ class ShrinkWrapper {
       }
 
       currentEdge.newEdge = newEdgeVertices.length;
+
       newEdgeVertices.push(newEdge);
+      newVerticiesNormals.push(tmpNormal);
 
       console.log(i, currentEdge, newEdge);
     }
@@ -282,6 +299,7 @@ class ShrinkWrapper {
      *******************************************************/
 
     newVertices = oldVertices.concat(newEdgeVertices);
+    newVerticiesNormals = oldVerticiesNormal.concat(newVerticiesNormals);
     let sl = oldVertices.length, edge1, edge2, edge3;
     newFaces = [];
 
@@ -311,6 +329,7 @@ class ShrinkWrapper {
 
     // Overwrite old arrays
     this.geometry.vertices = newVertices;
+    this.geometry.vertexNormals = newVerticiesNormals;
     this.geometry.faces = newFaces;
 
     // this.geometry.verticesNeedUpdate = true;
@@ -465,6 +484,32 @@ class NaiveBox extends THREE.Geometry {
       new THREE.Vector3(-0.578869, 0.975, 2.045),
       new THREE.Vector3(0.57887, 0.975, 2.045),
     );
+
+    /*
+        7____6      y
+      3/___2/|    x | z
+      | 5__|_4     \|/
+      1/___0/
+    */
+
+    /**
+     *      Note the index here should match the .vertices
+     *
+     *      @type {Array.<Vector3>}
+     */
+    this.vertexNormals = [
+      new THREE.Vector3(-1, -1, -1),
+      new THREE.Vector3(1, -1, -1),
+      new THREE.Vector3(-1, 1, -1),
+      new THREE.Vector3(1, 1, -1),
+      new THREE.Vector3(-1, -1, 1),
+      new THREE.Vector3(1, -1, 1),
+      new THREE.Vector3(-1, 1, 1),
+      new THREE.Vector3(1, 1, 1),
+    ];
+
+    // this.vertexNormals = this.vertexNormals.map(v => v.normalize());
+    this.vertexNormals.forEach((v, key) => v.normalize());
 
     // this.vertices.push(
     //   new THREE.Vector3(-0.746645, 0.235, -1.965),
