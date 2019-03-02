@@ -1,5 +1,28 @@
-const THREE = require('three');
+'use strict';
 
+const fs = require('fs');
+const path = require('path');
+const THREE = require('three');
+const OBJLoader = require('three-obj-loader');
+OBJLoader(THREE);
+
+const BUFFER = bufferFile('./models/1abeca7159db7ed9f200a72c9245aee7.obj');
+
+/**
+ * @param relPath
+ * @return {Buffer}
+ */
+function bufferFile(relPath) {
+  return fs.readFileSync(path.join(__dirname, relPath));
+}
+
+const loader = new THREE.ObjectLoader();
+
+let json = BUFFER.toJSON();
+console.log(json);
+
+// let model = loader.parse(json);
+// console.log(model);
 
 class NaiveBox extends THREE.Geometry {
   constructor() {
@@ -381,5 +404,5 @@ let geometry = new THREE.BoxGeometry(1, 1, 1);
 let material = new THREE.MeshBasicMaterial({color: 0x00ff00});
 let cube = new THREE.Mesh(geometry, material);
 let wrapper = new ShrinkWrapper(cube);
-wrapper.modify();
-console.log(wrapper.output.length);
+// wrapper.modify();
+// console.log(wrapper.output.length);
