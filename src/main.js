@@ -2,14 +2,15 @@
 
 const {PerformanceObserver, performance} = require('perf_hooks');
 
-const loadModel = require('./src/loader');
-const ShrinkWrapper = require('./src/shrink_wrapper');
+const loadModel = require('./loader');
+const dumpResult = require('./dumper');
+const ShrinkWrapper = require('./shrink_wrapper');
 
-function main() {
-  let {text, mesh} = loadModel('1abeca7159db7ed9f200a72c9245aee7.obj');
+function main(filename) {
+  let {text, mesh} = loadModel(filename);
   let wrapper = new ShrinkWrapper(mesh, text);
-  wrapper.modify(2);
-  console.log(wrapper.output);
+  wrapper.modify(5);
+  dumpResult(wrapper, filename);
   console.log(`Processed ${wrapper.output.length} vertices.`);
 }
 
@@ -21,9 +22,5 @@ const obs = new PerformanceObserver((list) => {
 });
 obs.observe({entryTypes: ['function']});
 
-// A performance timeline entry will be created
-wrapped();
-
-
-
+module.exports = wrapped;
 

@@ -12,6 +12,8 @@ class ShrinkWrapper {
    */
   constructor(target, text) {
 
+    this.subdividLevel = 5;
+
     /**
      * @type {Mesh}
      */
@@ -130,6 +132,7 @@ class ShrinkWrapper {
    * @param repeats {Number}
    */
   modify(repeats = 5) {
+    this.subdividLevel = repeats;
 
     while (repeats-- > 0) {
       this.shrink();
