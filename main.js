@@ -23,10 +23,13 @@ let text = BUFFER.toString();
 let scene = new THREE.Scene();
 let group = loader.parse(text);
 let mesh = group.children[0];
-mesh.material = new THREE.MeshNormalMaterial();
+mesh.material = new THREE.MeshBasicMaterial({
+  side: THREE.DoubleSide,
+});
 mesh.position.set(0, 0, 0);
+
 mesh.updateMatrixWorld(true);
-group.updateMatrixWorld(true);
+
 scene.add(mesh);
 
 class NaiveBox extends THREE.Geometry {
@@ -377,11 +380,11 @@ class ShrinkWrapper {
     // Toggle rotation bool for meshes that we clicked
     if (intersects.length > 0) {
       // this.debugShowPoint(intersects[0].point, 0xFF0000);
-      // console.log(intersects[0].distance);
-      this.output.push(intersects[0].distance);
+      let delta = intersects[0].distance;
+      if (step !== 0) delta = -delta;
+      this.output.push(delta);
 
       return intersects[0].point;
-
     } else {
       // If not found, shot a ray in opposite direction
       if (step === 0) {
@@ -395,7 +398,8 @@ class ShrinkWrapper {
 
 function main() {
   let wrapper = new ShrinkWrapper(mesh);
-  wrapper.modify(1);
+  wrapper.modify(2);
+  console.log(wrapper.output);
   console.log(`Processed ${wrapper.output.length} vertices.`);
 }
 

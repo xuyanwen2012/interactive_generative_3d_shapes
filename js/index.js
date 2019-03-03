@@ -59,8 +59,8 @@ let loadedModel;
 
 function doShrinkWrap() {
   const jjj = new ShrinkWrapper(loadedModel);
-  jjj.modify(1);
-  console.log(jjj.output.length);
+  jjj.modify(2);
+  console.log(jjj.output);
 }
 
 /**
