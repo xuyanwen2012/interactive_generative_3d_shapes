@@ -8,18 +8,21 @@ class ShrinkWrapper {
 
   /**
    * @param target {Mesh}
+   * @param text {string}
    */
-  constructor(target) {
+  constructor(target, text) {
 
     /**
      * @type {Mesh}
      */
     this.target = target;
 
+    let cornerText = ShrinkWrapper.generateCornerPoints(text);
+
     /**
      * @type {NaiveBox}
      */
-    this.geometry = new NaiveBox();
+    this.geometry = new NaiveBox(cornerText);
 
     /**
      * @type {MeshBasicMaterial}
@@ -35,6 +38,14 @@ class ShrinkWrapper {
      * @type {Array.<Number>}
      */
     this.output = [];
+  }
+
+  /**
+   * Should generate the corner points according to the paper. However I am
+   * simply reading the given data from the author here.
+   */
+  static generateCornerPoints(text) {
+    return text.split('\n').slice(0, 8).join('\n');
   }
 
   /**

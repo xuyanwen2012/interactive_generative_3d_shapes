@@ -14,7 +14,6 @@ const loader = new THREE.OBJLoader();
  * @return {Buffer}
  */
 function bufferFile(relPath) {
-  console.log(relPath);
   return fs.readFileSync(path.join(__dirname, relPath));
 }
 
@@ -22,7 +21,7 @@ function bufferFile(relPath) {
  *
  * @param filename {string} the filename of the .obj model
  * @param directory {string} the directory that con
- * @return {Mesh}
+ * @return {{mesh:Mesh, text: string}}
  */
 function loadModel(filename, directory = '../models') {
   const BUFFER = bufferFile(path.join(directory, filename));
@@ -37,7 +36,10 @@ function loadModel(filename, directory = '../models') {
   mesh.position.set(0, 0, 0);
   mesh.updateMatrixWorld(true);
 
-  return mesh;
+  return {
+    text: text,
+    mesh: mesh,
+  };
 }
 
 module.exports = loadModel;
