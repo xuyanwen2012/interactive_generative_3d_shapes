@@ -10,9 +10,6 @@ class ShrinkWrapper {
      */
     this.target = target;
 
-    /**
-     * @type {NaiveBox}
-     */
     this.geometry = new NaiveBox();
 
     /**
@@ -50,20 +47,44 @@ class ShrinkWrapper {
       ['5_7', new THREE.Vector3(1, 0, 1)], // x,z
       ['4_5', new THREE.Vector3(0, -1, 1)], // -y,z
       ['1_5', new THREE.Vector3(1, -1, 0)], // x,-y
-      ['1_7', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
+      ['3_5', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
       ['3_7', new THREE.Vector3(1, 1, 0)], // x,y
-      ['2_7', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
+      ['3_6', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
       ['0_5', new THREE.Vector3(0, -1, 0)], // face: (SUBJECT TO CHANGE) -y
+
+      // ['0_1', new THREE.Vector3(0, -1, -1)], // -z, -y
+      // ['0_2', new THREE.Vector3(-1, 0, -1)], // -x, -z
+      // ['0_3', new THREE.Vector3(0, 0, -1)], // face: (SUBJECT TO CHANGE) -z
+      // ['1_3', new THREE.Vector3(1, 0, -1)], // x, -z
+      // ['2_3', new THREE.Vector3(0, 1, -1)], // -z. y
+      // ['4_6', new THREE.Vector3(-1, 0, 1)], // -x. z
+      // ['2_4', new THREE.Vector3(-1, 0, 0)], // face: (SUBJECT TO CHANGE) -x
+      // ['0_4', new THREE.Vector3(-1, -1, 0)], // -x. -y
+      // ['2_6', new THREE.Vector3(-1, 1, 0)], // -x. -y
+      // ['5_6', new THREE.Vector3(0, 0, 1)], // face: (SUBJECT TO CHANGE) z
+      // ['6_7', new THREE.Vector3(0, 1, 1)], // y,z
+      // ['5_7', new THREE.Vector3(1, 0, 1)], // x,z
+      // ['4_5', new THREE.Vector3(0, -1, 1)], // -y,z
+      // ['1_5', new THREE.Vector3(1, -1, 0)], // x,-y
+      // ['1_7', new THREE.Vector3(1, 0, 0)], // face: (SUBJECT TO CHANGE) x
+      // ['3_7', new THREE.Vector3(1, 1, 0)], // x,y
+      // ['2_7', new THREE.Vector3(0, 1, 0)], // face: (SUBJECT TO CHANGE) y
+      // ['1_4', new THREE.Vector3(0, -1, 0)], // face: (SUBJECT TO CHANGE) -y
+
     ]);
 
-    this.predefinedNormals.forEach((v, key) => v.normalize());
+    // this.predefinedNormals.forEach((v, key) => v.normalize());
 
     this.initHelpers();
+
+    /**
+     * @type {Array}
+     */
+    this.output = [];
   }
 
   initHelpers() {
-    this.recreateEdgeHelper();
-    // this.createVertexNormalHelper();
+    // this.recreateEdgeHelper();
   }
 
   /**
@@ -74,7 +95,7 @@ class ShrinkWrapper {
       scene.remove(this.edgeHelper);
     }
 
-    const edges = new THREE.EdgesGeometry(this.geometry);
+    const edges = new THREE.EdgesGeometry(this.geometry, 0); // show all edge
 
     /**
      * @type {LineSegments}
@@ -85,23 +106,13 @@ class ShrinkWrapper {
 
   /**
    * @private
-   */
-  createVertexNormalHelper() {
-    const helper = new THREE.VertexNormalsHelper(this.mesh, 2, 0x00ff00, 1);
-    scene.add(helper);
-  }
-
-  /**
-   * @private
    * @param a
    * @param b
    * @param vertices
    * @param map
    * @param face
-   * @param metaVertices
    */
-  processEdge(a, b, vertices, map, face, metaVertices) {
-
+  processEdge(a, b, vertices, map, face) {
     let vertexIndexA = Math.min(a, b);
     let vertexIndexB = Math.max(a, b);
 
@@ -119,57 +130,36 @@ class ShrinkWrapper {
       let vertexB = vertices[vertexIndexB];
 
       edge = {
-
         a: vertexA, // pointer reference
         b: vertexB,
         newEdge: null,
-        // aIndex: a, // numbered reference
-        // bIndex: b,
         faces: [] // pointers to face
-
       };
 
       map[key] = edge;
-
     }
 
     edge.faces.push(face);
-
-    metaVertices[a].edges.push(edge);
-    metaVertices[b].edges.push(edge);
   }
 
   /**
    * @private
    * @param vertices
    * @param faces
-   * @param metaVertices
    * @param edges
    */
-  generateLookups(vertices, faces, metaVertices, edges) {
-
-    let i, il, face, edge;
-
-    for (i = 0, il = vertices.length; i < il; i++) {
-
-      metaVertices[i] = {edges: []};
-
-    }
-
-    for (i = 0, il = faces.length; i < il; i++) {
-      face = faces[i];
-
-      this.processEdge(face.a, face.b, vertices, edges, face, metaVertices);
-      this.processEdge(face.b, face.c, vertices, edges, face, metaVertices);
-      this.processEdge(face.c, face.a, vertices, edges, face, metaVertices);
-    }
+  generateLookups(vertices, faces, edges) {
+    faces.forEach(face => {
+      this.processEdge(face.a, face.b, vertices, edges, face);
+      this.processEdge(face.b, face.c, vertices, edges, face);
+      this.processEdge(face.c, face.a, vertices, edges, face);
+    });
   }
 
   /**
    * Main function to shrink wrap
    */
-  modify() {
-    let repeats = 1;
+  modify(repeats = 5) {
 
     while (repeats-- > 0) {
       this.shrink();
@@ -180,26 +170,42 @@ class ShrinkWrapper {
     this.geometry.computeFaceNormals();
     this.geometry.computeVertexNormals();
 
-    this.recreateEdgeHelper();
+    // this.recreateEdgeHelper();
+  }
+
+
+  shrink2() {
+    let oldVertices = this.geometry.vertices; // { x, y, z}
+    let oldFaces = this.geometry.faces; // { a, b, c }
+    let oldQuads = this.geometry.quads;
+    let sourceEdges = {}; // Edge => { oldVertex1, oldVertex2, faces[]  }
+
+    // Preprocess
+    oldQuads.forEach(quads => {
+      // this.processEdge(quads.a, quads.b, oldVertices, sourceEdges, )
+      // this.processEdge(face.a, face.b, vertices, edges, face);
+      // this.processEdge(face.b, face.c, vertices, edges, face);
+      // this.processEdge(face.c, face.a, vertices, edges, face);
+    });
+
+    // console.log(sourceEdges);
   }
 
   /**
    * @private
    */
   shrink() {
-    const ABC = ['a', 'b', 'c'];
-    let tmp = new THREE.Vector3();
+    let oldVertices, oldFaces, oldVerticiesNormal;
+    let newVertices, newFaces, newVerticiesNormals; // newUVs = [];
 
-    let oldVertices, oldFaces;
-    let newVertices, newFaces; // newUVs = [];
-
-    let n, l, i, il, j, k;
+    let i, il;
     let metaVertices;
 
     // new stuff.
-    let sourceEdges, newEdgeVertices, newSourceVertices;
+    let sourceEdges, newEdgeVertices;
 
     oldVertices = this.geometry.vertices; // { x, y, z}
+    oldVerticiesNormal = this.geometry.vertexNormals;
     oldFaces = this.geometry.faces; // { a: oldVertex1, b: oldVertex2, c: oldVertex3 }
 
     /******************************************************
@@ -211,10 +217,10 @@ class ShrinkWrapper {
     metaVertices = new Array(oldVertices.length);
     sourceEdges = {}; // Edge => { oldVertex1, oldVertex2, faces[]  }
 
-    this.generateLookups(oldVertices, oldFaces, metaVertices, sourceEdges);
+    this.generateLookups(oldVertices, oldFaces, sourceEdges);
 
-    console.log(metaVertices);
-    console.log(sourceEdges);
+    // console.log(metaVertices);
+    // console.log(sourceEdges);
 
     /******************************************************
      *
@@ -225,7 +231,8 @@ class ShrinkWrapper {
      *******************************************************/
 
     newEdgeVertices = [];
-    let other, currentEdge, newEdge, face;
+    newVerticiesNormals = [];
+    let currentEdge, newEdge, face;
     let connectedFaces;
 
     for (i in sourceEdges) {
@@ -241,31 +248,48 @@ class ShrinkWrapper {
       }
 
       // IVAN: find the center point of this edge
-      // let tmp = new THREE.Vector3();
+      let tmp = new THREE.Vector3();
       tmp.set(0, 0, 0);
-
       tmp.addVectors(currentEdge.a, currentEdge.b).divideScalar(2);
-
 
       /**
        * @type {Vector3}
        */
-      let normal = this.predefinedNormals.get(i);
-      let point;
-      if (normal) {
-        // Subject to remove
-        const arrowHelper = new THREE.ArrowHelper(normal, tmp, 1, 0xffff00);
-        scene.add(arrowHelper);
+        // let normal = this.predefinedNormals.get(i);
+      let point = tmp;
 
-        point = this.debugProjectPint(tmp, normal);
+      // show vertex normal
+      let fff = i.split('_');
+      let aIndex = parseInt(fff[0]);
+      let bIndex = parseInt(fff[1]);
+      let normalA = this.geometry.vertexNormals[aIndex];
+      let normalB = this.geometry.vertexNormals[bIndex];
+      // scene.add(new THREE.ArrowHelper(normalA, currentEdge.a, 1, 0xffff00));
+      // scene.add(new THREE.ArrowHelper(normalB, currentEdge.b, 1, 0xffff00));
+
+      // calculate normal
+      let tmpNormal = new THREE.Vector3();
+      tmpNormal.set(0, 0, 0);
+      tmpNormal.addVectors(normalA, normalB).divideScalar(2).normalize();
+
+      if (tmpNormal) {
+        // Subject to remove
+        // const arrowHelper = new THREE.ArrowHelper(tmpNormal, tmp, 1, 0xffff00);
+        // scene.add(arrowHelper);
+
+        point = this.debugProjectPint(tmp, tmpNormal);
       }
+
+      // this.debugShowPoint(tmp);
 
       if (point) {
         newEdge.add(point);
       }
 
       currentEdge.newEdge = newEdgeVertices.length;
+
       newEdgeVertices.push(newEdge);
+      newVerticiesNormals.push(tmpNormal);
 
       // console.log(i, currentEdge, newEdge);
     }
@@ -279,22 +303,25 @@ class ShrinkWrapper {
      *******************************************************/
 
     newVertices = oldVertices.concat(newEdgeVertices);
+    newVerticiesNormals = oldVerticiesNormal.concat(newVerticiesNormals);
     let sl = oldVertices.length, edge1, edge2, edge3;
     newFaces = [];
 
     // console.log(newVertices);
-
-    // newVertices.forEach(v => this.debugShowPoint(v))
 
     for (i = 0, il = oldFaces.length; i < il; i++) {
 
       face = oldFaces[i];
 
       // find the 3 new edges vertex of each old face
+      // Edge => { oldVertex1, oldVertex2, faces[]  }
 
       edge1 = this.getEdge(face.a, face.b, sourceEdges).newEdge + sl;
       edge2 = this.getEdge(face.b, face.c, sourceEdges).newEdge + sl;
       edge3 = this.getEdge(face.c, face.a, sourceEdges).newEdge + sl;
+
+      // console.log(`${edge1.a}_${edge1.b}`);
+      // console.log(this.getEdge(face.a, face.b, sourceEdges));
 
       // create 4 faces.
 
@@ -306,10 +333,11 @@ class ShrinkWrapper {
 
     // Overwrite old arrays
     this.geometry.vertices = newVertices;
+    this.geometry.vertexNormals = newVerticiesNormals;
     this.geometry.faces = newFaces;
 
     // this.geometry.verticesNeedUpdate = true;
-    console.log(newFaces);
+    // console.log(newFaces);
   }
 
   /**
@@ -345,7 +373,7 @@ class ShrinkWrapper {
     const dotGeometry = new THREE.Geometry();
     dotGeometry.vertices.push(pos);
     const dotMaterial = new THREE.PointsMaterial({
-      size: 0.5,
+      size: 0.1,
       color: color,
     });
     const dot = new THREE.Points(dotGeometry, dotMaterial);
@@ -355,30 +383,95 @@ class ShrinkWrapper {
   /**
    * @param vert {Vector3}
    * @param dir {Vector3}
+   * @param step {Number}
    */
-  debugProjectPint(vert, dir) {
+  debugProjectPint(vert, dir, step = 0) {
     // shot a ray from this vertex up util hit a point
     const raycaster = new THREE.Raycaster();
-    raycaster.set(vert, dir);
+
+    // flip the direction if the previous try missed.
+    let direction = dir;
+    if (step !== 0) {
+      direction = dir.clone().negate();
+    }
+
+    raycaster.set(vert, direction);
 
     const intersects = raycaster.intersectObject(this.target);
 
     // Toggle rotation bool for meshes that we clicked
     if (intersects.length > 0) {
-      this.debugShowPoint(intersects[0].point, 0xFF0000);
-      console.log(intersects[0].distance);
+      // this.debugShowPoint(intersects[0].point, 0xFF0000);
+      // console.log(intersects[0].distance);
+      this.output.push(intersects[0].distance);
 
       return intersects[0].point;
 
     } else {
-      console.log('missed');
+      // If not found, shot a ray in opposite direction
+      if (step === 0) {
+        return this.debugProjectPint(vert, dir, step + 1);
+      } else {
+        console.log('missed');
 
-      return null;
+        return null;
+      }
     }
+
 
   }
 }
 
+class QuadBox extends THREE.Geometry {
+  constructor() {
+    super();
+
+    this.vertices.push(
+      new THREE.Vector3(-0.695, 0.125, -2.04054),
+      new THREE.Vector3(0.695, 0.125, -2.04054),
+      new THREE.Vector3(-0.705, 0.691878, -1.845),
+      new THREE.Vector3(0.705, 0.691878, -1.845),
+      new THREE.Vector3(-0.665, 0.285, 2.03903),
+      new THREE.Vector3(0.665, 0.285, 2.03903),
+      new THREE.Vector3(-0.578869, 0.975, 2.045),
+      new THREE.Vector3(0.57887, 0.975, 2.045),
+    );
+
+    /**
+     * @type {Array.<{a,b,c,d}>}
+     */
+    this.quads = [
+      {a: 3, b: 1, c: 0, d: 2},
+      {a: 2, b: 0, c: 4, d: 6},
+      {a: 6, b: 4, c: 5, d: 7},
+      {a: 7, b: 5, c: 1, d: 3},
+      {a: 7, b: 3, c: 2, d: 6},
+      {a: 1, b: 5, c: 4, d: 0},
+    ]; // {a, b, c, d}
+
+    this.quads.forEach(quad => this.drawQuadFace(quad));
+
+    this.computeFaceNormals();
+    this.computeVertexNormals();
+  }
+
+  drawQuadFace({a, b, c, d}) {
+
+    /*
+     *  a - d
+     *  | \ |
+     *  b - c
+     */
+    this.drawTriFace(a, b, c);
+    this.drawTriFace(c, d, a);
+  }
+
+  drawTriFace(a, b, c) {
+    this.faces.push(new THREE.Face3(a, b, c));
+  }
+
+
+}
 
 class NaiveBox extends THREE.Geometry {
   constructor() {
@@ -397,6 +490,32 @@ class NaiveBox extends THREE.Geometry {
       new THREE.Vector3(-0.578869, 0.975, 2.045),
       new THREE.Vector3(0.57887, 0.975, 2.045),
     );
+
+    /*
+        7____6      y
+      3/___2/|    x | z
+      | 5__|_4     \|/
+      1/___0/
+    */
+
+    /**
+     *      Note the index here should match the .vertices
+     *
+     *      @type {Array.<Vector3>}
+     */
+    this.vertexNormals = [
+      new THREE.Vector3(-1, -1, -1),
+      new THREE.Vector3(1, -1, -1),
+      new THREE.Vector3(-1, 1, -1),
+      new THREE.Vector3(1, 1, -1),
+      new THREE.Vector3(-1, -1, 1),
+      new THREE.Vector3(1, -1, 1),
+      new THREE.Vector3(-1, 1, 1),
+      new THREE.Vector3(1, 1, 1),
+    ];
+
+    // this.vertexNormals = this.vertexNormals.map(v => v.normalize());
+    this.vertexNormals.forEach((v, key) => v.normalize());
 
     // this.vertices.push(
     //   new THREE.Vector3(-0.746645, 0.235, -1.965),
@@ -429,15 +548,16 @@ class NaiveBox extends THREE.Geometry {
 
     this.faces.push(new THREE.Face3(1, 0, 2));
     this.faces.push(new THREE.Face3(3, 1, 2));
-    this.faces.push(new THREE.Face3(4, 6, 0));
+    this.faces.push(new THREE.Face3(0, 4, 6));
     this.faces.push(new THREE.Face3(2, 0, 6));
+    this.faces.push(new THREE.Face3(4, 5, 7));
     this.faces.push(new THREE.Face3(6, 4, 7));
-    this.faces.push(new THREE.Face3(5, 7, 4));
-    this.faces.push(new THREE.Face3(5, 1, 7));
-    this.faces.push(new THREE.Face3(3, 7, 1));
-    this.faces.push(new THREE.Face3(3, 2, 7));
-    this.faces.push(new THREE.Face3(6, 7, 2));
-    this.faces.push(new THREE.Face3(4, 0, 5));
+    this.faces.push(new THREE.Face3(5, 1, 3));
+    this.faces.push(new THREE.Face3(7, 5, 3));
+
+    this.faces.push(new THREE.Face3(3, 2, 6));
+    this.faces.push(new THREE.Face3(7, 3, 6));
+    this.faces.push(new THREE.Face3(5, 4, 0));
     this.faces.push(new THREE.Face3(1, 5, 0));
 
     // this.computeVertexNormals();
