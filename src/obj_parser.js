@@ -1,23 +1,10 @@
 'use strict';
 
 const THREE = require('three');
-
-const fs = require('fs');
-const path = require('path');
 const OBJLoader = require('three-obj-loader');
 OBJLoader(THREE);
 
 const loader = new THREE.OBJLoader();
-
-/**
- * @param filename {string} model's filename
- * @param directory {string=}
- * @return {string} The content of the obj file as string.
- */
-function loadFile(filename, directory = '../models') {
-  const BUFFER = fs.readFileSync(path.join(__dirname, directory, filename));
-  return BUFFER.toString();
-}
 
 /**
  * Parse & Construct the mesh given the string of obj file
@@ -37,4 +24,4 @@ function parseModel(text) {
   return mesh;
 }
 
-module.exports = {loadFile, parseModel};
+module.exports = {loader, parseModel};

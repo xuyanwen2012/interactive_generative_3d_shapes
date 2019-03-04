@@ -2,7 +2,7 @@
 
 const {PerformanceObserver, performance} = require('perf_hooks');
 
-const {loadFile, parseModel} = require('./loaders');
+const {loadFile, parseModel} = require('./file_loader');
 const dumpResult = require('./dumper');
 const ShrinkWrapper = require('./shrink_wrapper');
 
