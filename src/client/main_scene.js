@@ -2,9 +2,12 @@ import {
   AmbientLight,
   AxesHelper,
   DoubleSide,
+  EdgesGeometry,
   FileLoader,
   GridHelper,
   Group,
+  LineBasicMaterial,
+  LineSegments,
   MeshNormalMaterial,
 } from 'three';
 import OrbitControls from 'three-orbitcontrols';
@@ -19,23 +22,20 @@ export default class MainScene extends Group {
   constructor(camera, renderer) {
     super();
 
-    // Essentials
+    // Setup Essentials
     const light = new AmbientLight(0x404040, 0.66);
     const controls = new OrbitControls(camera, renderer.domElement);
-
-    // Helpers
-    const gridHelper = new GridHelper(10, 10, 0xffffff, 0x555555);
-    const axesHelper = new AxesHelper();
-    const boxHelper = new BoundingBox();
 
     /**
      * @type {LineSegments[]}
      */
     this.helpers = [
-      gridHelper,
-      axesHelper,
-      boxHelper,
+      new GridHelper(10, 10, 0xffffff, 0x555555),
+      new AxesHelper(),
+      new BoundingBox(),
     ];
+
+    this.edgeHelper = null;
 
     /**
      * @type {Mesh}
@@ -45,7 +45,12 @@ export default class MainScene extends Group {
     /**
      * @type {string}
      */
-    this.objText = null;
+    this.objText = '';
+
+    /**
+     * @type {Mesh}
+     */
+    this.wrapper = null;
 
     this.loadModel();
     this.initializeGUI();
@@ -59,15 +64,17 @@ export default class MainScene extends Group {
 
     const helpers = {
       gridHelpers: true,
+      edgeHelper: false,
       carModel: true,
     };
 
     this.options = {
       subdivisions: 5,
-      shrink: () => this.doAlgorithm(this.subdivisions),
+      shrink: () => this.doAlgorithm(this.options.subdivisions),
     };
 
     gui.add(helpers, 'gridHelpers').onChange(newValue => this.updateHelpers(newValue));
+    gui.add(helpers, 'edgeHelper').onChange(newValue => this.updateEdgeHelper(newValue));
     gui.add(helpers, 'carModel').onChange(newValue => this.updateModel(newValue));
 
     gui.add(this.options, 'subdivisions').min(0).max(5).step(1);
@@ -95,11 +102,13 @@ export default class MainScene extends Group {
    * @private
    */
   doAlgorithm(levels) {
+    this.remove(this.wrapper);
     const wrapper = new ShrinkWrapper(this.carMesh, this.objText);
 
     this.add(wrapper.mesh);
-
     wrapper.modify(levels);
+
+    this.wrapper = wrapper.mesh;
   }
 
   /**
@@ -114,5 +123,21 @@ export default class MainScene extends Group {
    */
   updateModel(newValue) {
     this.carMesh.translateX(newValue ? 3 : -3);
+  }
+
+  /**
+   * @private
+   */
+  updateEdgeHelper(newValue) {
+    if (newValue && this.wrapper) {
+      this.remove(this.edgeHelper);
+      const edges = new EdgesGeometry(this.wrapper.geometry, 0); // show all edge
+      this.edgeHelper = new LineSegments(edges, new LineBasicMaterial({color: 0x0000ff}));
+      this.add(this.edgeHelper);
+    }
+
+    if (this.edgeHelper) {
+      this.edgeHelper.visible = newValue;
+    }
   }
 }
