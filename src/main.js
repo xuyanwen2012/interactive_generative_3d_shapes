@@ -10,7 +10,7 @@ const parser = require('./obj_parser');
 function main(filename) {
   const text = loadFile(filename);
   const mesh = parser.parseModel(text);
-  const wrapper = new ShrinkWrapper(mesh);
+  const wrapper = new ShrinkWrapper(mesh, text);
 
   wrapper.modify(5);
   dumpResult(wrapper, filename);

@@ -1,14 +1,19 @@
 import {
   AmbientLight,
   AxesHelper,
+  DoubleSide,
+  FileLoader,
   GridHelper,
   Group,
-  MeshNormalMaterial
+  MeshNormalMaterial,
 } from 'three';
 import OrbitControls from 'three-orbitcontrols';
+import * as dat from 'dat.gui';
 
+import ShrinkWrapper from '../shrink_wrapper';
 import BoundingBox from './bouding_box';
-import {loader} from '../obj_parser';
+
+const parser = require('../obj_parser');
 
 export default class MainScene extends Group {
   constructor(camera, renderer) {
@@ -37,32 +42,59 @@ export default class MainScene extends Group {
      */
     this.carMesh = null;
 
-    this.loadModel();
+    /**
+     * @type {string}
+     */
+    this.objText = null;
 
-    this.add(light, controls);
+    this.loadModel();
+    this.initializeGUI();
+
+    this.add(light);
     this.add(...this.helpers);
+  }
+
+  initializeGUI() {
+    const gui = new dat.GUI();
+
+    const obj = {
+      show: () => this.showHelpers(),
+      hide: () => this.hideHelpers(),
+      shrink: () => this.doAlgorithm()
+    };
+
+    gui.add(obj, 'show');
+    gui.add(obj, 'hide');
+    gui.add(obj, 'shrink');
   }
 
   update(timeStamp) {
   }
 
   loadModel(filename = 'models/1abeca7159db7ed9f200a72c9245aee7.obj') {
-    loader.load(filename, (group) => {
-      let mesh = group.children[0];
+    let fileLoader = new FileLoader();
 
-      mesh.material = new MeshNormalMaterial();
+    fileLoader.load(filename, (text) => {
+      const mesh = parser.parseModel(text);
       this.add(mesh);
+      mesh.material = new MeshNormalMaterial({
+        side: DoubleSide,
+      });
       this.carMesh = mesh;
+      this.objText = text;
     });
   }
 
   /**
    * @private
    */
-  doAlgorithem() {
-    const wrapper = new ShrinkWrapper(this.carMesh);
+  doAlgorithm() {
+    const wrapper = new ShrinkWrapper(this.carMesh, this.objText);
 
-    wrapper.modify(5);
+    this.add(wrapper.mesh);
+
+    wrapper.modify(2);
+    console.log(wrapper.output)
   }
 
   /**
@@ -70,6 +102,7 @@ export default class MainScene extends Group {
    */
   hideHelpers() {
     this.helpers.forEach(helper => helper.visible = false);
+    this.carMesh.visible = false;
   }
 
   /**
@@ -77,5 +110,6 @@ export default class MainScene extends Group {
    */
   showHelpers() {
     this.helpers.forEach(helper => helper.visible = true);
+    this.carMesh.visible = true;
   }
 }

@@ -8,8 +8,9 @@ class ShrinkWrapper {
 
   /**
    * @param target {Mesh}
+   * @param text {string}
    */
-  constructor(target) {
+  constructor(target, text) {
 
     this.subdividLevel = 5;
 
@@ -18,7 +19,7 @@ class ShrinkWrapper {
      */
     this.target = target;
 
-    let cornerPoints = ShrinkWrapper.generateCornerPoints(target);
+    let cornerPoints = ShrinkWrapper.generateCornerPoints(target, text);
 
     /**
      * @type {NaiveBox}
@@ -45,20 +46,23 @@ class ShrinkWrapper {
    * Should generate the corner points according to the paper. However I am
    * simply reading the given data from the author here.
    * @param mesh {Mesh}
+   * @param text {string}
    * @return array
    */
-  static generateCornerPoints(mesh) {
-    // getting the first 8 vertices
-    let array = [];
+  static generateCornerPoints(mesh, text) {
+    let newText = text.split('\n').slice(0, 8).join('\n');
 
-    let j = 0;
-    for (let i = 0; i < 8; i++) {
-      const x = mesh.geometry.attributes.position[j];
-      const y = mesh.geometry.attributes.position[j + 1];
-      const z = mesh.geometry.attributes.position[j + 2];
+    const buffer = [];
+    newText.match(/-?\d+.\d+/gm).forEach((value) => {
+      buffer.push(parseFloat(value));
+    });
 
+    const array = [];
+    for (let i = 0; i < 3 * 8; i += 3) {
+      const x = buffer[i];
+      const y = buffer[i + 1];
+      const z = buffer[i + 2];
       array.push(new THREE.Vector3(x, y, z));
-      j += 3;
     }
 
     return array;
@@ -236,7 +240,6 @@ class ShrinkWrapper {
       if (tmpNormal) {
         point = this.shootRay(tmp, tmpNormal);
       }
-
 
       if (point) {
         newEdge.add(point);
