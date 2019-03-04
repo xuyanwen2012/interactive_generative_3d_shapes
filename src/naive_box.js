@@ -50,6 +50,9 @@ class NaiveBox extends THREE.Geometry {
     this.faces.push(new THREE.Face3(7, 3, 6));
     this.faces.push(new THREE.Face3(5, 4, 0));
     this.faces.push(new THREE.Face3(1, 5, 0));
+
+    this.computeFaceNormals();
+    this.computeVertexNormals();
   }
 }
 

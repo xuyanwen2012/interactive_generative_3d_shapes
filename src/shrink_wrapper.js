@@ -256,7 +256,7 @@ class ShrinkWrapper {
     /******************************************************
      *
      *  Step 3.
-     *  Generate Faces between source vertecies
+     *  Generate Faces between source vertices
      *  and edge vertices.
      *
      *******************************************************/

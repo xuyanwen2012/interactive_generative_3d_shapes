@@ -57,15 +57,21 @@ export default class MainScene extends Group {
   initializeGUI() {
     const gui = new dat.GUI();
 
-    const obj = {
-      show: () => this.showHelpers(),
-      hide: () => this.hideHelpers(),
-      shrink: () => this.doAlgorithm()
+    const helpers = {
+      gridHelpers: true,
+      carModel: true,
     };
 
-    gui.add(obj, 'show');
-    gui.add(obj, 'hide');
-    gui.add(obj, 'shrink');
+    this.options = {
+      subdivisions: 5,
+      shrink: () => this.doAlgorithm(this.subdivisions),
+    };
+
+    gui.add(helpers, 'gridHelpers').onChange(newValue => this.updateHelpers(newValue));
+    gui.add(helpers, 'carModel').onChange(newValue => this.updateModel(newValue));
+
+    gui.add(this.options, 'subdivisions').min(0).max(5).step(1);
+    gui.add(this.options, 'shrink');
   }
 
   update(timeStamp) {
@@ -88,28 +94,25 @@ export default class MainScene extends Group {
   /**
    * @private
    */
-  doAlgorithm() {
+  doAlgorithm(levels) {
     const wrapper = new ShrinkWrapper(this.carMesh, this.objText);
 
     this.add(wrapper.mesh);
 
-    wrapper.modify(2);
-    console.log(wrapper.output)
+    wrapper.modify(levels);
   }
 
   /**
    * @private
    */
-  hideHelpers() {
-    this.helpers.forEach(helper => helper.visible = false);
-    this.carMesh.visible = false;
+  updateHelpers(newValue) {
+    this.helpers.forEach(helper => helper.visible = newValue);
   }
 
   /**
    * @private
    */
-  showHelpers() {
-    this.helpers.forEach(helper => helper.visible = true);
-    this.carMesh.visible = true;
+  updateModel(newValue) {
+    this.carMesh.translateX(newValue ? 3 : -3);
   }
 }
