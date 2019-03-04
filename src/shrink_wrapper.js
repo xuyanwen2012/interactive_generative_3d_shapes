@@ -19,12 +19,15 @@ class ShrinkWrapper {
      */
     this.target = target;
 
-    let cornerPoints = ShrinkWrapper.generateCornerPoints(target, text);
+    /**
+     * @type {Array.<Vector3>}
+     */
+    this.cornerPoints = ShrinkWrapper.generateCornerPoints(target, text);
 
     /**
      * @type {NaiveBox}
      */
-    this.geometry = new NaiveBox(cornerPoints);
+    this.geometry = new NaiveBox(this.cornerPoints);
 
     /**
      * @type {MeshBasicMaterial}
