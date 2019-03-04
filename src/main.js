@@ -2,14 +2,15 @@
 
 const {PerformanceObserver, performance} = require('perf_hooks');
 
-const {loadFile, parseModel} = require('./file_loader');
-const dumpResult = require('./dumper');
 const ShrinkWrapper = require('./shrink_wrapper');
+const dumpResult = require('./dumper');
+const loadFile = require('./file_loader');
+const parser = require('./obj_parser');
 
 function main(filename) {
   const text = loadFile(filename);
-  const mesh = parseModel(text);
-  const wrapper = new ShrinkWrapper(mesh, text);
+  const mesh = parser.parseModel(text);
+  const wrapper = new ShrinkWrapper(mesh);
 
   wrapper.modify(5);
   dumpResult(wrapper, filename);

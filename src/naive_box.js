@@ -3,23 +3,16 @@
 const THREE = require('three');
 
 class NaiveBox extends THREE.Geometry {
-  constructor(text) {
+
+  /**
+   * @param cornerPoints {Array.<Vector3>} Must contain 8 Vector3 describing
+   * the corresponding corner points.
+   */
+  constructor(cornerPoints) {
     super();
 
-    const buffer = [];
-    text.match(/-?\d+.\d+/gm).forEach((value) => {
-      buffer.push(parseFloat(value));
-    });
-
-    this.vertices.length = 0;
+    this.vertices = cornerPoints.slice(0);
     this.faces.length = 0;
-
-    for (let i = 0; i < buffer.length; i += 3) {
-      const x = buffer[i];
-      const y = buffer[i + 1];
-      const z = buffer[i + 2];
-      this.vertices.push(new THREE.Vector3(x, y, z));
-    }
 
     /**
      *      Note the index here should match the .vertices

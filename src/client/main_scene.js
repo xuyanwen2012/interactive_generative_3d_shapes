@@ -32,6 +32,11 @@ export default class MainScene extends Group {
       boxHelper,
     ];
 
+    /**
+     * @type {Mesh}
+     */
+    this.carMesh = null;
+
     this.loadModel();
 
     this.add(light, controls);
@@ -47,7 +52,17 @@ export default class MainScene extends Group {
 
       mesh.material = new MeshNormalMaterial();
       this.add(mesh);
+      this.carMesh = mesh;
     });
+  }
+
+  /**
+   * @private
+   */
+  doAlgorithem() {
+    const wrapper = new ShrinkWrapper(this.carMesh);
+
+    wrapper.modify(5);
   }
 
   /**
