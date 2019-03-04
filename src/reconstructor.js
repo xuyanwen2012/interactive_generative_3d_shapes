@@ -226,6 +226,7 @@ class Reconstructor {
       tmpNormal.multiplyScalar(this.data[this.index]);
       this.index++;
 
+      point.add(tmpNormal);
       newEdge.add(point);
 
       currentEdge.newEdge = newEdgeVertices.length;
