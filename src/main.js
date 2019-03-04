@@ -2,10 +2,10 @@
 
 const {PerformanceObserver, performance} = require('perf_hooks');
 
-const ShrinkWrapper = require('./shrink_wrapper');
-const dumpResult = require('./dumper');
-const loadFile = require('./file_loader');
-const parser = require('./obj_parser');
+const ShrinkWrapper = require('./core/shrink_wrapper');
+const dumpResult = require('./core/dumper');
+const loadFile = require('./core/file_loader');
+const parser = require('./core/obj_parser');
 
 function main(filename) {
   const text = loadFile(filename);

@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const THREE = require('three');
-const Reconstructor = require('./reconstructor');
+const Reconstructor = require('./core/reconstructor');
 
 const OBJExporter = require('three-obj-exporter');
 const exporter = new OBJExporter();

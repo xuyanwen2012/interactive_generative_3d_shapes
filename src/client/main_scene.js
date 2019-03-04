@@ -13,10 +13,10 @@ import {
 import OrbitControls from 'three-orbitcontrols';
 import * as dat from 'dat.gui';
 
-import ShrinkWrapper from '../shrink_wrapper';
+import ShrinkWrapper from '../core/shrink_wrapper';
 import BoundingBox from './bouding_box';
 
-const parser = require('../obj_parser');
+const parser = require('../core/obj_parser');
 
 export default class MainScene extends Group {
   constructor(camera, renderer) {
