@@ -2,15 +2,18 @@
 
 const {PerformanceObserver, performance} = require('perf_hooks');
 
-const loadModel = require('./loader');
+const {loadFile, parseModel} = require('./loaders');
 const dumpResult = require('./dumper');
 const ShrinkWrapper = require('./shrink_wrapper');
 
 function main(filename) {
-  let {text, mesh} = loadModel(filename);
-  let wrapper = new ShrinkWrapper(mesh, text);
+  const text = loadFile(filename);
+  const mesh = parseModel(text);
+  const wrapper = new ShrinkWrapper(mesh, text);
+
   wrapper.modify(5);
   dumpResult(wrapper, filename);
+
   console.log(`Processed ${wrapper.output.length} vertices.`);
 }
 
