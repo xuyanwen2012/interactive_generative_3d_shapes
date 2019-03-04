@@ -27,6 +27,30 @@ function main () {
     }
     // Commands
 
+    // Get info on model / etc data
+    // Currently being used to test glob()
+    addSubcommand('info', (parser) => {
+        parser.addArgument('input');
+    }, (args) => {
+        const glob = require('glob');
+        const files = { 
+            'obj': [],
+            'json': [],
+            'gen.obj': []
+        };
+        const extCounts = {};
+        glob.sync(args.input).forEach((file) => {
+            const ext = file.split('.').slice(1).join('.');
+            if (files[ext] !== undefined) {
+                files[ext].push(file);
+            }
+        });
+        function listFiles (ext) {
+            console.log(`${files[ext].length} ${ext} file(s):\n\t${files[ext].join('\n\t')}`);
+        }
+        [ 'obj', 'json', 'gen.obj' ].map(listFiles);
+    });
+
     // view a model, json parameterization, or directory
     addSubcommand('view', (parser) => {
         parser.addArgument('input');
