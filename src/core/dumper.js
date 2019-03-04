@@ -21,7 +21,7 @@ module.exports = (wrapper, filename) => {
   const outFilename = filename.replace('.obj', '.json');
   const json = JSON.stringify(generateOutput(wrapper));
 
-  const outPath = path.join(__dirname, '../output', outFilename);
+  const outPath = path.join(__dirname, '../../output', outFilename);
   fs.writeFile(outPath, json, 'utf8', (err) => {
     if (err) throw err;
     console.log(`The file ${outFilename} has been saved!`);

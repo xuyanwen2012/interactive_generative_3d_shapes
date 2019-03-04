@@ -8,7 +8,7 @@ const path = require('path');
  * @param directory {string=}
  * @return {string} The content of the obj file as string.
  */
-function loadFile(filename, directory = '../models') {
+function loadFile(filename, directory = '../../models') {
   const BUFFER = fs.readFileSync(path.join(__dirname, directory, filename));
   return BUFFER.toString();
 }
