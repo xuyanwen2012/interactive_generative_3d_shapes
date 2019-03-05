@@ -9,12 +9,9 @@ const OBJExporter = require('three-obj-exporter');
 const exporter = new OBJExporter();
 
 function reconstruct (args) {
-    let inputPath = path.join(__dirname, "../output", args.input);
-    if (!fs.existsSync(inputPath)) {
-        inputPath = args.input;
-    }
-    console.log(`loading ${inputPath}`);
-    const data = JSON.parse(fs.readFileSync(inputPath));
+    console.dir(args);
+    console.log(`loading ${args.input}`);
+    const data = JSON.parse(fs.readFileSync(args.input));
 
     console.log(`reconstructing with ${args.levels} subdivision levels`);
     const reconstructor = new Reconstructor(data);
@@ -24,11 +21,11 @@ function reconstruct (args) {
     const mesh = new THREE.Mesh(reconstructor.geometry, material);
     const result = exporter.parse(mesh);
 
-    const outPath = args.outPath || inputPath.replace('.json', '.gen.obj');
-    console.log(`saving as ${outPath}`);
-    fs.writeFile(outPath, result, 'utf8', (err) => {
-        if (err) throw err;
-        console.log('done');
-    });
+    console.log(`saving as ${args.output}`);
+    fs.writeFileSync(args.output, result, 'utf8');
+    // fs.writeFile(args.output, result, 'utf8', (err) => {
+    //     if (err) throw err;
+    //     console.log('done');
+    // });
 }
 module.exports = reconstruct;

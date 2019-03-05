@@ -17,13 +17,12 @@ function generateOutput(wrapper) {
  * @param wrapper {ShrinkWrapper}
  * @param filename {string}
  */
-module.exports = (wrapper, filename) => {
-  const outFilename = filename.replace('.obj', '.json');
+module.exports = (wrapper, filepath) => {
   const json = JSON.stringify(generateOutput(wrapper));
-
-  const outPath = path.join(__dirname, '../../output', outFilename);
-  fs.writeFile(outPath, json, 'utf8', (err) => {
-    if (err) throw err;
-    console.log(`The file ${outFilename} has been saved!`);
-  });
+  console.log(`writing to ${filepath}`);
+  fs.writeFileSync(filepath, json, 'utf8');
+  // fs.writeFile(filepath, json, 'utf8', (err) => {
+  //   if (err) throw err;
+  //   console.log(`The file ${outFilename} has been saved!`);
+  // });
 };

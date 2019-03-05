@@ -38,10 +38,12 @@ function main () {
     // Currently being used to test glob()
     addSubcommand('info', (parser) => {
         parser.addArgument('input');
+        parser.addArgument('--iext', { defaultValue: '.obj' });
+        parser.addArgument('--oext', { defaultValue: '.json' });
     }, (args) => {
         const files = locateFiles({
             input: args.input, output: "output",
-            inputExt: '.obj', outputExt: '.json',
+            inputExt: args.iext, outputExt: args.oext,
         });
         console.dir(files);
     });
@@ -68,16 +70,20 @@ function main () {
 
         let fileArgs = locateFiles(args);
         if (!args.rebuild) {
+            console.dir(fileArgs);
             fileArgs = fileArgs.filter((file) => {
-                return fs.existsSync(file.output) 
+                return !fs.existsSync(file.output) 
             });
+            console.dir(fileArgs);
         }
         if (args.limit) {
+            console.log(`reducing ${fileArgs.length} to ${args.limit}`);
             args.limit = Math.min(args.limit, fileArgs.length);
             fileArgs = fileArgs.slice(0, args.limit);
         }
         fileArgs.forEach((fargs) => {
             fargs.__proto__ = args;
+            enforceFileExists(fargs.input);
             console.log(`processing ${fargs.input} => ${fargs.output}, levels = ${fargs.levels}`);
             require('./src/process_file')(fargs);
         })
@@ -88,14 +94,33 @@ function main () {
         parser.addArgument('input'); 
         parser.addArgument('output');
         parser.addArgument([ '-l', '--levels' ], { type: Number, defaultValue: 5 });
-        parser.addArgument([ '--one' ], { type: Number, defaultValue: 5 });
+        parser.addArgument([ '--limit' ], { type: Number, defaultValue: 0 });
+        parser.addArgument([ '-r', '--rebuild' ], { action: 'storeTrue' });
     }, (args) => {
         args.inputExt = DATA_PARAM_EXT;
-        args.outputExt = DATA_PARAM_EXT;
+        args.outputExt = OBJ_GEN_EXT;
         args.output = args.output || DEFAULT_OBJ_GEN_DIR;
 
-        enforceFileExists(args.input);
-        require('./src/reconstruct_file')(args);
+        let fileArgs = locateFiles(args);
+        if (!args.rebuild) {
+            console.dir(fileArgs);
+            fileArgs = fileArgs.filter((file) => {
+                return !fs.existsSync(file.output) 
+            });
+            console.dir(fileArgs);
+        }
+        if (args.limit) {
+            console.log(`reducing ${fileArgs.length} to ${args.limit}`);
+            args.limit = Math.min(args.limit, fileArgs.length);
+            fileArgs = fileArgs.slice(0, args.limit);
+        }
+        console.dir(fileArgs);
+        fileArgs.forEach((fargs) => {
+            fargs.__proto__ = args;
+            enforceFileExists(fargs.input);
+            console.log(`processing ${fargs.input} => ${fargs.output}, levels = ${fargs.levels}`);
+            require('./src/reconstruct_file')(fargs);
+        });
     });
 
    const args = parser.parseArgs();
