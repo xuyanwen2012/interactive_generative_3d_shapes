@@ -48,6 +48,27 @@ function main () {
         console.dir(files);
     });
 
+    const getAllFileArgumentsAndRunParallel = (baseArgs, each) => (args) => {
+        args.__proto__ = baseArgs;             // provide defaults for optional args 
+        let fileArgs = locateFiles(args);
+        if (!args.rebuild) {
+            console.dir(fileArgs);
+            fileArgs = fileArgs.filter((file) => {
+                return !fs.existsSync(file.output) 
+            });
+            console.dir(fileArgs);
+        }
+        if (args.limit) {
+            console.log(`reducing ${fileArgs.length} to ${args.limit}`);
+            args.limit = Math.min(args.limit, fileArgs.length);
+            fileArgs = fileArgs.slice(0, args.limit);
+        }
+        fileArgs.forEach((argInstance) => {
+            argInstance.__proto__ = args;     // forward parent args
+            each(argInstance);
+        });
+    };
+
     // view a model, json parameterization, or directory
     addSubcommand('view', (parser) => {
         parser.addArgument('input');
@@ -59,69 +80,34 @@ function main () {
     // process an obj model => json parameterization
     addSubcommand('process', (parser) => {
         parser.addArgument('input'); 
-        parser.addArgument('output'); 
+        parser.addArgument('output', { defaultValue: DEFAULT_DATA_PARAM_DIR }); 
         parser.addArgument([ '-l', '--levels' ], { type: Number, defaultValue: 5 });
         parser.addArgument([ '--limit' ], { type: Number, defaultValue: 0 });
         parser.addArgument([ '-r', '--rebuild' ], { action: 'storeTrue' });
+    }, getAllFileArgumentsAndRunParallel({
+        inputExt: OBJ_INPUT_EXT,
+        outputExt: DATA_PARAM_EXT,
     }, (args) => {
-        args.inputExt = OBJ_INPUT_EXT;
-        args.outputExt = DATA_PARAM_EXT;
-        args.output = args.output || DEFAULT_DATA_PARAM_DIR;
-
-        let fileArgs = locateFiles(args);
-        if (!args.rebuild) {
-            console.dir(fileArgs);
-            fileArgs = fileArgs.filter((file) => {
-                return !fs.existsSync(file.output) 
-            });
-            console.dir(fileArgs);
-        }
-        if (args.limit) {
-            console.log(`reducing ${fileArgs.length} to ${args.limit}`);
-            args.limit = Math.min(args.limit, fileArgs.length);
-            fileArgs = fileArgs.slice(0, args.limit);
-        }
-        fileArgs.forEach((fargs) => {
-            fargs.__proto__ = args;
-            enforceFileExists(fargs.input);
-            console.log(`processing ${fargs.input} => ${fargs.output}, levels = ${fargs.levels}`);
-            require('./src/process_file')(fargs);
-        })
-    });
+        enforceFileExists(args.input);
+        console.log(`processing ${args.input} => ${args.output}, levels = ${args.levels}`);
+        require('./src/process_file')(args);
+    }));
 
     // reconstruct a json parameterization => obj model
     addSubcommand('reconstruct', (parser) => {
         parser.addArgument('input'); 
-        parser.addArgument('output');
+        parser.addArgument('output', { defaultValue: DEFAULT_OBJ_GEN_DIR });
         parser.addArgument([ '-l', '--levels' ], { type: Number, defaultValue: 5 });
         parser.addArgument([ '--limit' ], { type: Number, defaultValue: 0 });
         parser.addArgument([ '-r', '--rebuild' ], { action: 'storeTrue' });
+    }, getAllFileArgumentsAndRunParallel({
+        inputExt: DATA_PARAM_EXT,
+        outputExt: OBJ_GEN_EXT,
     }, (args) => {
-        args.inputExt = DATA_PARAM_EXT;
-        args.outputExt = OBJ_GEN_EXT;
-        args.output = args.output || DEFAULT_OBJ_GEN_DIR;
-
-        let fileArgs = locateFiles(args);
-        if (!args.rebuild) {
-            console.dir(fileArgs);
-            fileArgs = fileArgs.filter((file) => {
-                return !fs.existsSync(file.output) 
-            });
-            console.dir(fileArgs);
-        }
-        if (args.limit) {
-            console.log(`reducing ${fileArgs.length} to ${args.limit}`);
-            args.limit = Math.min(args.limit, fileArgs.length);
-            fileArgs = fileArgs.slice(0, args.limit);
-        }
-        console.dir(fileArgs);
-        fileArgs.forEach((fargs) => {
-            fargs.__proto__ = args;
-            enforceFileExists(fargs.input);
-            console.log(`processing ${fargs.input} => ${fargs.output}, levels = ${fargs.levels}`);
-            require('./src/reconstruct_file')(fargs);
-        });
-    });
+        enforceFileExists(args.input);
+        console.log(`processing ${args.input} => ${args.output}, levels = ${args.levels}`);
+        require('./src/reconstruct_file')(args);
+    }));
 
    const args = parser.parseArgs();
    // console.dir(args);
