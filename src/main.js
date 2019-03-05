@@ -7,7 +7,9 @@ const dumpResult = require('./core/dumper');
 const loadFile = require('./core/file_loader');
 const parser = require('./core/obj_parser');
 
-function main(filename) {
+function main(args) {
+  let filename = args.input;
+  console.dir(args.input);
   const text = loadFile(filename);
   const mesh = parser.parseModel(text);
   const wrapper = new ShrinkWrapper(mesh, text);

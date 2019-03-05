@@ -9,9 +9,11 @@ const path = require('path');
  * @return {string} The content of the obj file as string.
  */
 function loadFile(filename, directory = '../../models') {
-  const BUFFER = fs.readFileSync(path.join(__dirname, directory, filename));
-  return BUFFER.toString();
+  if (fs.existsSync(path.join(__dirname, directory, filename))) {
+    return fs.readFileSync(path.join(__dirname, directory, filename)).toString();
+  } else {
+    return fs.readFileSync(filename).toString();
+  }
 }
-
 
 module.exports = loadFile;
