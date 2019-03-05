@@ -66,16 +66,17 @@ function main () {
         parser.addArgument([ '-l', '--levels' ], { type: Number, defaultValue: 5 });
     }, (args) => {
         enforceFileExists(args.input);
-        require('./src/main')(args);
+        require('./src/process_file')(args);
     });
 
     // reconstruct a json parameterization => obj model
     addSubcommand('reconstruct', (parser) => {
         parser.addArgument('input'); 
         parser.addArgument('output');
+        parser.addArgument([ '-l', '--levels' ], { type: Number, defaultValue: 5 });
     }, (args) => {
         enforceFileExists(args.input);
-        console.warn("TBD: reconstruct");
+        require('./src/reconstruct_file')(args);
     });
 
    const args = parser.parseArgs();
