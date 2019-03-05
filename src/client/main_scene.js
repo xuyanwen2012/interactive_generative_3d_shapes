@@ -84,7 +84,7 @@ export default class MainScene extends Group {
   update(timeStamp) {
   }
 
-  loadModel(filename = 'models/1abeca7159db7ed9f200a72c9245aee7.obj') {
+  loadModel(filename = 'models/1b94aad142e6c2b8af9f38a1ee687286.obj') {
     let fileLoader = new FileLoader();
 
     fileLoader.load(filename, (text) => {

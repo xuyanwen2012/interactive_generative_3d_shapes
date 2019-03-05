@@ -3,6 +3,7 @@
 const THREE = require('three');
 
 const NaiveBox = require('./naive_box');
+const Octree = require('./octree');
 
 class ShrinkWrapper {
 
@@ -67,6 +68,19 @@ class ShrinkWrapper {
       const z = buffer[i + 2];
       array.push(new THREE.Vector3(x, y, z));
     }
+
+    return array;
+  }
+
+  /**
+   * @param mesh {Mesh}
+   * @return {Array}
+   */
+  static calculateCornerPoints(mesh) {
+    let array = [];
+
+    let tree = new Octree();
+
 
     return array;
   }
