@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 'use strict';
-
-const ArgumentParser = require('argparse').ArgumentParser;
 const fs = require('fs');
+const ArgumentParser = require('argparse').ArgumentParser;
+const locateFiles = require('./src/utils/locate_files');
+
+const OBJ_INPUT_EXT = '.obj';
+const DATA_PARAM_EXT = '.json';
+const OBJ_GEN_EXT = '.gen.obj';
+const DEFAULT_OBJ_MODEL_DIR = 'models';
+const DEFAULT_DATA_PARAM_DIR = 'output';
+const DEFAULT_OBJ_GEN_DIR = 'output';
 
 main();
 
@@ -32,23 +39,11 @@ function main () {
     addSubcommand('info', (parser) => {
         parser.addArgument('input');
     }, (args) => {
-        const glob = require('glob');
-        const files = { 
-            'obj': [],
-            'json': [],
-            'gen.obj': []
-        };
-        const extCounts = {};
-        glob.sync(args.input).forEach((file) => {
-            const ext = file.split('.').slice(1).join('.');
-            if (files[ext] !== undefined) {
-                files[ext].push(file);
-            }
+        const files = locateFiles({
+            input: args.input, output: "output",
+            inputExt: '.obj', outputExt: '.json',
         });
-        function listFiles (ext) {
-            console.log(`${files[ext].length} ${ext} file(s):\n\t${files[ext].join('\n\t')}`);
-        }
-        [ 'obj', 'json', 'gen.obj' ].map(listFiles);
+        console.dir(files);
     });
 
     // view a model, json parameterization, or directory
@@ -64,9 +59,28 @@ function main () {
         parser.addArgument('input'); 
         parser.addArgument('output'); 
         parser.addArgument([ '-l', '--levels' ], { type: Number, defaultValue: 5 });
+        parser.addArgument([ '--limit' ], { type: Number, defaultValue: 0 });
+        parser.addArgument([ '-r', '--rebuild' ], { action: 'storeTrue' });
     }, (args) => {
-        enforceFileExists(args.input);
-        require('./src/process_file')(args);
+        args.inputExt = OBJ_INPUT_EXT;
+        args.outputExt = DATA_PARAM_EXT;
+        args.output = args.output || DEFAULT_DATA_PARAM_DIR;
+
+        let fileArgs = locateFiles(args);
+        if (!args.rebuild) {
+            fileArgs = fileArgs.filter((file) => {
+                return fs.existsSync(file.output) 
+            });
+        }
+        if (args.limit) {
+            args.limit = Math.min(args.limit, fileArgs.length);
+            fileArgs = fileArgs.slice(0, args.limit);
+        }
+        fileArgs.forEach((fargs) => {
+            fargs.__proto__ = args;
+            console.log(`processing ${fargs.input} => ${fargs.output}, levels = ${fargs.levels}`);
+            require('./src/process_file')(fargs);
+        })
     });
 
     // reconstruct a json parameterization => obj model
@@ -74,13 +88,18 @@ function main () {
         parser.addArgument('input'); 
         parser.addArgument('output');
         parser.addArgument([ '-l', '--levels' ], { type: Number, defaultValue: 5 });
+        parser.addArgument([ '--one' ], { type: Number, defaultValue: 5 });
     }, (args) => {
+        args.inputExt = DATA_PARAM_EXT;
+        args.outputExt = DATA_PARAM_EXT;
+        args.output = args.output || DEFAULT_OBJ_GEN_DIR;
+
         enforceFileExists(args.input);
         require('./src/reconstruct_file')(args);
     });
 
    const args = parser.parseArgs();
-   console.dir(args);
+   // console.dir(args);
    commands[args.command](args);
    process.exit();
 }
