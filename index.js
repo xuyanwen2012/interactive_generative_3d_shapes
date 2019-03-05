@@ -13,26 +13,27 @@ const DEFAULT_OBJ_GEN_DIR = 'output';
 
 main();
 
-function main () {
-    const parser = new ArgumentParser({
-        version: '0.0.1',
-        addHelp: true,
-        description: "tbd (shape-gen tools)"
-    });
-    const subparsers = parser.addSubparsers({ title: 'command', dest: 'command' })
-    const commands = {};
-    function addSubcommand (name, addArgs, callback) {
-        const parser = subparsers.addParser(name, { addHelp: true });
-        addArgs(parser);
-        commands[name] = callback;
+function main() {
+  const parser = new ArgumentParser({
+    version: '0.0.1',
+    addHelp: true,
+    description: 'tbd (shape-gen tools)'
+  });
+  const subparsers = parser.addSubparsers({title: 'command', dest: 'command'});
+  const commands = {};
+
+  function addSubcommand(name, addArgs, callback) {
+    const parser = subparsers.addParser(name, {addHelp: true});
+    addArgs(parser);
+    commands[name] = callback;
+  }
+
+  function enforceFileExists(file) {
+    if (!fs.existsSync(file)) {
+      console.warn(`file does not exist: '${file}'`);
+      process.exit();
     }
-    function enforceFileExists (file) {
-        if (!fs.existsSync(file)) {
-            console.warn(`file does not exist: '${file}'`);
-            process.exit();
-        }
-    }
-    // Commands
+  }
 
     // Get info on model / etc data
     // Currently being used to test glob()

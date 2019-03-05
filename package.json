@@ -11,10 +11,10 @@
     "dat.gui": "^0.7.5",
     "glob": "^7.1.3",
     "meow": "^5.0.0",
-    "three": "^0.102.0",
+    "three": "^0.102.1",
     "three-obj-exporter": "0.0.1",
     "three-obj-loader": "^1.1.3",
-    "three-orbitcontrols": "^2.101.1",
+    "three-orbitcontrols": "^2.102.1",
     "webpack-cli": "^3.2.3"
   },
   "devDependencies": {
