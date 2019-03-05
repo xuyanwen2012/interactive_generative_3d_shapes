@@ -8,18 +8,19 @@ const loadFile = require('./core/file_loader');
 const parser = require('./core/obj_parser');
 
 function process_file(args) {
-  let filename = args.input;
-  console.log(`loading ${filename}`);
-  console.dir(args.input);
-  const text = loadFile(filename);
+  console.log(`loading ${args.input}`);
+  const text = loadFile(args.input);
   const mesh = parser.parseModel(text);
   const wrapper = new ShrinkWrapper(mesh, text);
 
   console.log(`processing with ${args.levels} subdivision levels`);
   wrapper.modify(args.levels);
-  dumpResult(wrapper, filename);
+
+  console.log(`writing to ${args.output}`);
+  dumpResult(wrapper, args.output);
 
   console.log(`Processed ${wrapper.output.length} vertices.`);
+  console.log("");
 }
 
 const wrapped = performance.timerify(process_file);
