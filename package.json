@@ -7,6 +7,8 @@
     "build": "webpack --mode production"
   },
   "dependencies": {
+    "@tensorflow/tfjs-node": "^0.3.1",
+    "@tensorflow/tfjs-node-gpu": "^0.3.1",
     "argparse": "^1.0.10",
     "dat.gui": "^0.7.5",
     "glob": "^7.1.3",
