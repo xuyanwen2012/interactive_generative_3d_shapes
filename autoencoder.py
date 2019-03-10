@@ -18,6 +18,11 @@ def makedirs (path):
     if basedir and not os.path.exists(basedir):
         os.makedirs(basedir)
 
+""" D enforcement pattern """
+def enforce (condition, fmt, *args, exception=Exception):
+    if not condition:
+        raise exception(fmt%args)
+
 """ Load dataset """
 def load_dataset(dataset_url):
     """ Loads a processed dataset (shrinkwrapped params as a flat JSON array) from a URL.
@@ -151,12 +156,10 @@ class AutoencoderModel:
             # If neither specified, we have no idea where to save the model, so raise an error
             raise Exception("Cannot save, no path specified (self.autosave_path = %s)"%self.autosave_path)
 
-        # Build directories if they don't exist
-        makedirs(path)
-
         # Save keras model
-        print("Saving as '%s'"%model_path)
         model_path = os.path.join(path, 'model.h5')
+        makedirs(model_path)
+        print("Saving as '%s'"%model_path)
         self.autoencoder.save(model_path)
 
         # Save additional persistent state (current_epoch, etc)
@@ -193,11 +196,72 @@ class AutoencoderModel:
 
         if self.autosave_path:
             self.save()
-        
-    
-if __name__ == '__main__':
-    dataset = load_dataset('https://raw.githubusercontent.com/SeijiEmery/shape-net-data/master/datasets/training-lv5.pkl')
-    print("shape: %s"%(dataset['data'].shape,))
-    print("keys: %s"%(len(dataset['keys'])))
 
-    autoencoder = AutoencoderModel()
+
+    def train (self, epochs, dataset, train_test_split=0.75, batch_size=32, autosave_frequency=10):
+        
+        """ Verify dataset integrity and get train / test data """
+        enforce(autosave_frequency > 0, "autosave frequency must be > 0, got %s", autosave_frequency)
+        enforce(train_test_split > 0.0 and train_test_split <= 1.0, "invalid train / test split: %s", train_test_split)
+        enforce(type(dataset) == dict, "Invalid dataset object: got %s (%s)!", dataset, type(dataset))
+        enforce(set(dataset.keys()) == set([ 'data', 'keys' ]), "Invalid dataset format! (has keys %s)", set(dataset.keys()))
+
+        # Load data, keys
+        data, keys = dataset['data'], dataset['keys']
+
+        enforce(type(data) == np.ndarray and type(keys) == list, "Invalid types!: data %s, keys %s", type(data), type(keys))
+        enforce(len(data.shape) == 2 and data.shape[1] == 6162, "Invalid shape! %s", data.shape)
+        enforce(len(keys) == data.shape[0], "# keys (%s) does not match # data elements (%s)!", len(keys), data.shape[1])
+        
+        # Calculate train / test split
+        num_train = int(data.shape[0] * train_test_split)
+        num_test = data.shape[0] - num_train
+
+        enforce(num_train > 0, "must have at least 1 training sample; got %s train, %s test from %s elements, %s train / test split",
+            num_train, num_test, data.shape[0], train_test_split)
+
+        # Split data
+        x_train, x_test = np.split(data, [ num_train ], 0)
+        print("split data %s => x_train %s, x_test %s with train / test split of %s"%(
+            data.shape, x_train.shape, x_test.shape, train_test_split))
+
+        """ Train model """
+        print("Training model for %s epochs (epochs %s -> %s)"%(epochs, self.current_epoch, self.current_epoch + epochs))
+        if self.model_snapshot_frequency and self.model_snapshot_path:
+            next_snapshot = (self.current_epoch // self.model_snapshot_frequency + 1) * self.model_snapshot_frequency
+            print("Next snapshot at epoch %s"%next_snapshot)
+        else:
+            next_snapshot = None
+
+        last_saved_epoch = self.current_epoch
+
+        while epochs > 0:
+            print("Training on epoch %s -> %s"%(self.current_epoch, self.current_epoch + autosave_frequency))
+            self.autoencoder.fit(x_train, x_train, epochs=autosave_frequency, batch_size=batch_size)
+
+            epochs -= autosave_frequency
+            self.current_epoch += autosave_frequency
+
+            if next_snapshot and self.current_epoch >= next_snapshot:
+                print("Saving snapshot at epoch %s"%(self.current_epoch))
+                self.save(os.path.join(self.model_snapshot_path, str(self.current_epoch)))
+                next_snapshot = (self.current_epoch // self.model_snapshot_frequency + 1) * self.model_snapshot_frequency
+                print("Next snapshot at epoch %s"%next_snapshot)
+
+            print("Autosaving...")
+            self.save()
+            last_saved_epoch = self.current_epoch
+
+        if last_saved_epoch != self.current_epoch:
+            print("Autosaving...")
+            self.save()
+
+DEFAULT_DATASET = 'https://raw.githubusercontent.com/SeijiEmery/shape-net-data/master/datasets/training-lv5.pkl'
+
+if __name__ == '__main__':
+    autoencoder = AutoencoderModel(model_snapshot_frequency=1)
+    # autoencoder.train("fubar")
+    # autoencoder.train({ 'data': "fubar" })
+    # autoencoder.train({ 'data': "fubar", 'keys': [ 1, 2 ] })
+    # autoencoder.train({ 'data': np.array([ 1, 2 ]), 'keys': [ 1, 2 ] })
+    autoencoder.train(10, load_dataset(DEFAULT_DATASET), autosave_frequency=1)
