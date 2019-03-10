@@ -1,11 +1,35 @@
 #!/usr/bin/env python3
+"""run / test / train autoencoder.
+
+Usage:
+  autoencoder.py train <num_epochs> 
+    [--model <model_path>]
+    [--use-dataset <dataset_path>] 
+    [--autosave <autosave_frequency>]
+    [--autosave-path <autosave_path>]
+    [--snapshot <snapshot_frequency>]
+    [--snapshot-path <snapshot_path>]
+    [--batch-size <batch_size>]
+    [--train-test-split <split_ratio>]
+
+Options:
+  -h --help                         show this screen
+  --use-dataset <dataset_path>      use a specific dataset (should be a URL)
+  --model <model_path>              select model path to load from  [default: model]
+  --autosave <autosave_frequency>   set autosave frequency          [default: 10]
+  --autosave-path <autosave_path>   set autosave path               [default: model]
+  --snapshot <snapshot_frequency>   set snapshot frequency          [default: 50]
+  --snapshot-path <snapshot_path>   set snapshot path               [default: model/snapshots]
+  --batch-size <batch_size>         set training batch size         [default: 32]
+  --train-test-split <split_ratio>  set train / test split ratio    [default: 0.8]
+"""
 from urllib.request import urlopen
 import pickle as pkl
 import numpy as np
 import json
 import sys
 import os
-import argparse
+from docopt import docopt
 from keras.models import Sequential
 from keras.layers import Input, Dense, Activation
 from keras.models import Model, load_model
@@ -258,10 +282,57 @@ class AutoencoderModel:
 
 DEFAULT_DATASET = 'https://raw.githubusercontent.com/SeijiEmery/shape-net-data/master/datasets/training-lv5.pkl'
 
+class ArgumentParsingException (Exception):
+    def __init__ (self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
 if __name__ == '__main__':
-    autoencoder = AutoencoderModel(model_snapshot_frequency=1)
-    # autoencoder.train("fubar")
-    # autoencoder.train({ 'data': "fubar" })
-    # autoencoder.train({ 'data': "fubar", 'keys': [ 1, 2 ] })
-    # autoencoder.train({ 'data': np.array([ 1, 2 ]), 'keys': [ 1, 2 ] })
-    autoencoder.train(10, load_dataset(DEFAULT_DATASET), autosave_frequency=1)
+    args = docopt(__doc__, version='Naval Fate 2.0')
+    # print(args)
+
+    """ Validate arguments """
+    enforce_arg = lambda cond, fmt, *args: enforce(cond, fmt, *args, exception=ArgumentParsingException)
+    def parse_arg(T, key, min_bound=None, max_bound=None):
+        try:
+            value = T(args[key])
+            if min_bound is not None:
+                enforce_arg(value >= min_bound, "%s must be >= %s, got %s", key, min_bound, args[key])
+            if max_bound is not None:
+                enforce_arg(value <= max_bound, "%s must be <= %s, got %s", key, max_bound, args[key])
+            return value
+        except ValueError:
+            enforce_arg(False, "%s should be %s, got '%s'", key, str(T), args[key])
+
+    try:
+        if args['train']:
+            num_epochs = parse_arg(int, '<num_epochs>', min_bound=1)
+
+        data_url = args['--use-dataset'] or DEFAULT_DATASET
+        model_path = args['--model']
+        autosave_path = args['--autosave-path']
+        autosave_freq = parse_arg(int, '--autosave', min_bound=0)
+        snapshot_path = args['--snapshot-path']
+        snapshot_freq = parse_arg(int, '--snapshot', min_bound=0)
+        batch_size = parse_arg(int, '--batch-size', min_bound=1)
+        train_test_split = parse_arg(float, '--train-test-split', min_bound=0.0, max_bound=1.0)
+        # enforce_arg(os.path.exists(model_path), "model_path '%s' does not exist", model_path)
+    except ArgumentParsingException as e:
+        print("Invalid argument: %s"%e)
+        sys.exit(-1)
+
+    """ Run everything """
+    dataset = load_dataset(data_url)
+    autoencoder = AutoencoderModel(
+            autoload_path=model_path,
+            autosave_path=autosave_path,
+            model_snapshot_path=snapshot_path,
+            model_snapshot_frequency=snapshot_freq)
+
+    if args['train']:
+        autoencoder.train(
+            epochs=num_epochs,
+            dataset=dataset,
+            train_test_split=train_test_split,
+            batch_size=batch_size,
+            autosave_frequency=autosave_freq)
+
