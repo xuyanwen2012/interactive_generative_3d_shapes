@@ -19,25 +19,52 @@ $ npm run start
 ```
 ### OBJ Preprocessor
 
-I am still setting up this cli application right now. So use the following code for temporory access of the preprocessor. The OBJ file should placed under ```models```.
+#### Processing models:
 
-```
-$ node index.js [filename]
+To process models (obj => shrinkwrap params), run
 
-# example:
-# node index.js 1abeca7159db7ed9f200a72c9245aee7.obj
-# => 
-#    OBJLoader: 40.886ms
-#    Processed 6138 vertices.
-#    8797.551085
-#    The file 1abeca7159db7ed9f200a72c9245aee7.json has been saved!
+    $ node index.js process <input-model-directory> <output-directory>
 
-```
+There are some nice options, like `--limit <N>` (only runs the processor on N files), `--levels <N>` (set subdivision levels), and `--rebuild` (by default, the preprocessor will skip reprocessing files that already exist in the output directory, but this can be overridden with `--rebuild`). 
 
-### OBJ Reconstruction
+For the full list, run `node index.js process --help`. 
 
-Still under developing. But you can see a sample at ```src/temp.js```.
-    
+Warning: `--workers` is currently broken and should not be used.
+
+#### Reconstructing models:
+
+To reconstruct models (shrinkwrap params => obj), run
+
+    $ node index.js reconstruct <input-param-directory> <output-obj-directory>
+
+Again, there are several options you can list using `node index.js reconstruct --help`.
+
+#### Other options:
+
+    $ node index.js info <directory> --iext <input-file-ext> --oext <output-file-ext>
+
+can be used to list all the files in a directory w/ a matching file extension (and corresponding output files w/ output file extensions), and exists for development and debugging purposes.
+
+    $ node index.js view
+
+currently does not do anything. To launch the visualization tool run `npm start`.
+
+
+### Offline neural net (autoencoder) training
+
+To run:
+
+    $ python3 autoencoder.py train <num-epochs>
+    $ python3 autoencoder.py train <num-epochs> --autosave <autosave_frequency> --snapshot <snapshot_frequency>
+
+By default, the latest keras model is saved to `model/model.h5` and snapshots are saved to `model/snapshots/<epoch>/model.h5`. You can run from past model with
+
+    $ python3 autoencoder.py train <num-epochs> --model model/snapshots/<epoch>
+
+The output directories, save frequencies, batch size and dataset source are all configurable via commandline arguments, see
+
+    $ python3 autoencoder.py --help
+
 ## References 
 
 <b>ShapeNet (2015)</b> [[Link]](https://www.shapenet.org/)
