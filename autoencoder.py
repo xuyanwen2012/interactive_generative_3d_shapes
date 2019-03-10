@@ -11,7 +11,7 @@ Usage:
     [--snapshot-path <snapshot_path>]
     [--batch-size <batch_size>]
     [--train-test-split <split_ratio>]
-  autoencoder.py check
+  autoencoder.py test
     [--model <model_path>]
     [--use-dataset <dataset_path>]
     [--train-test-split <split_ratio>]
@@ -160,9 +160,34 @@ class AutoencoderModel:
         self.model_snapshot_frequency = model_snapshot_frequency
         self.current_epoch = 0
 
+        self.input_size = input_size
+        self.hidden_layer_size = hidden_layer_size
+        self.encoding_size = encoding_size
+
         if autoload_path:
             if not self.load(autoload_path):
                 self.build()
+
+    def get_encoder_and_decoder (self):
+        enforce(len(self.autoencoder.layers) == 8,
+            "autoencoder model has changed, expected 8 layers but got %s:\n\t%s",
+            len(self.autoencoder.layers), '\n\t'.join(['%s: %s'%values for values in enumerate(self.autoencoder.layers) ]))
+
+        print("encoder:")
+        encoder_input = Input(shape=(self.input_size,))
+        encoder = encoder_input
+        for layer in self.autoencoder.layers[0:4]:
+            encoder = layer(encoder)
+        self.encoder = Model(encoder_input, encoder)
+        self.encoder.summary()
+
+        print("decoder:")
+        decoder_input = Input(shape=(self.encoding_size,))
+        decoder = decoder_input
+        for layer in self.autoencoder.layers[4:8]:
+            decoder = layer(decoder)
+        self.decoder = Model(decoder_input, decoder)
+        self.decoder.summary()
 
     def load (self, path=None):
         """ Loads keras model and other data from a directory, given by path.
@@ -194,6 +219,7 @@ class AutoencoderModel:
             self.autoencoder = load_model(model_path)
             print("Loaded autoencoder:")
             self.autoencoder.summary()
+            self.get_encoder_and_decoder()
             return True
         else:
             print("Can't load model from '%s', file does not exist"%path)
@@ -256,6 +282,7 @@ class AutoencoderModel:
         
         print("Loaded autoencoder:")
         self.autoencoder.summary()
+        self.get_encoder_and_decoder()
 
         if self.autosave_path:
             self.save()
@@ -331,7 +358,7 @@ if __name__ == '__main__':
     try:
         if args['train']:
             num_epochs = parse_arg(int, '<num_epochs>', min_bound=1)
-        elif args['check']:
+        elif args['test']:
             pass
         elif args['generate']:
             output_path = parse_arg(str, '<output>') 
@@ -366,7 +393,7 @@ if __name__ == '__main__':
             epochs=num_epochs,
             batch_size=batch_size)
 
-    elif args['check']:
+    elif args['test']:
         autoencoder.evaluate_using_test_data()
 
     elif args['generate']:
