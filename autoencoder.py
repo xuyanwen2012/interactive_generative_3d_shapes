@@ -70,7 +70,7 @@ def load_dataset(dataset_url):
 
     if dataset_url.startswith('https://'):
         print("fetching %s..."%dataset_url)
-        data = urlopen(url).read()
+        data = urlopen(dataset_url).read()
         print("done; caching locally as '%s'"%cached_path)
         makedirs(cached_path)
         with open(cached_path, 'wb') as f:
