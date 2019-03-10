@@ -287,7 +287,7 @@ class ArgumentParsingException (Exception):
         super().__init__(*args, **kwargs)
 
 if __name__ == '__main__':
-    args = docopt(__doc__, version='Naval Fate 2.0')
+    args = docopt(__doc__)
     # print(args)
 
     """ Validate arguments """
