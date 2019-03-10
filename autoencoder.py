@@ -326,10 +326,24 @@ class AutoencoderModel:
 
     def evaluate_using_test_data (self):
         x_train, x_test = self.data
+
         print("evaluation using test data (shape %s) TBD"%(x_test.shape,))
+
+        # TODO: compare these using loss function
+        y_train = self.autoencoder.predict(x_train)
+        y_test  = self.autoencoder.predict(x_test)
 
     def generate (self, count, output_path):
         print("generation TBD")
+
+        # TODO: generate using decoder.predict() from randomly (or fed in) latent vectors
+
+        # note: consider the arguments of this function and its CLI interface are temporary
+        # and prob subject to change. It may make sense to pass in a an array of latent
+        # parameters, for example (as a json file or something), and write back out parameters
+        # as json or to individual files in a directory. idk. we don't even necessarily need
+        # to do this step here though since we could just load a model snapshot in javascript
+        # land and generate data there
 
 
 DEFAULT_DATASET = 'https://raw.githubusercontent.com/SeijiEmery/shape-net-data/master/datasets/training-lv5.pkl'
