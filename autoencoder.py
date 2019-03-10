@@ -73,11 +73,42 @@ def load_dataset(dataset_url):
     raise Exception("Unable to load dataset from '%s'"%dataset_url)
 
 
+def validate_and_split_data (dataset, train_test_split=0.75):
+    # Validate parameters...
+    enforce(train_test_split > 0.0 and train_test_split <= 1.0, "invalid train / test split: %s", train_test_split)
+    enforce(type(dataset) == dict, "Invalid dataset object: got %s (%s)!", dataset, type(dataset))
+    enforce(set(dataset.keys()) == set([ 'data', 'keys' ]), "Invalid dataset format! (has keys %s)", set(dataset.keys()))
+
+    # Load data, keys
+    data, keys = dataset['data'], dataset['keys']
+
+    enforce(type(data) == np.ndarray and type(keys) == list, "Invalid types!: data %s, keys %s", type(data), type(keys))
+    enforce(len(data.shape) == 2 and data.shape[1] == 6162, "Invalid shape! %s", data.shape)
+    enforce(len(keys) == data.shape[0], "# keys (%s) does not match # data elements (%s)!", len(keys), data.shape[1])
+    
+    # Calculate train / test split
+    num_train = int(data.shape[0] * train_test_split)
+    num_test = data.shape[0] - num_train
+
+    enforce(num_train > 0, "must have at least 1 training sample; got %s train, %s test from %s elements, %s train / test split",
+        num_train, num_test, data.shape[0], train_test_split)
+
+    # Split data
+    x_train, x_test = np.split(data, [ num_train ], 0)
+    print("split data %s => x_train %s, x_test %s with train / test split of %s"%(
+        data.shape, x_train.shape, x_test.shape, train_test_split))
+
+    return x_train, x_test
+
+
 class AutoencoderModel:
     def __init__ (
-            self, 
+            self,
+            dataset,
+            train_test_split = 0.75,
             autoload_path='model', 
             autosave_path='model', 
+            autosave_frequency=10,
             model_snapshot_path='model/snapshots',
             model_snapshot_frequency=100,
             input_size=6162, 
@@ -113,10 +144,12 @@ class AutoencoderModel:
                 ...
                 models/snapshots/N/model.h5, model_state.json       (model after N epochs)
         """
+        self.data = validate_and_split_data(dataset, train_test_split)
         self.input_size = input_size
         self.hidden_layer_size = hidden_layer_size
         self.encoding_size = encoding_size
         self.autosave_path = autosave_path
+        self.autosave_frequency = autosave_frequency
         self.model_snapshot_path = model_snapshot_path
         self.model_snapshot_frequency = model_snapshot_frequency
         self.current_epoch = 0
@@ -221,33 +254,11 @@ class AutoencoderModel:
         if self.autosave_path:
             self.save()
 
-
-    def train (self, epochs, dataset, train_test_split=0.75, batch_size=32, autosave_frequency=10):
+    def train (self, epochs, batch_size=32):
         
-        """ Verify dataset integrity and get train / test data """
-        enforce(autosave_frequency > 0, "autosave frequency must be > 0, got %s", autosave_frequency)
-        enforce(train_test_split > 0.0 and train_test_split <= 1.0, "invalid train / test split: %s", train_test_split)
-        enforce(type(dataset) == dict, "Invalid dataset object: got %s (%s)!", dataset, type(dataset))
-        enforce(set(dataset.keys()) == set([ 'data', 'keys' ]), "Invalid dataset format! (has keys %s)", set(dataset.keys()))
-
-        # Load data, keys
-        data, keys = dataset['data'], dataset['keys']
-
-        enforce(type(data) == np.ndarray and type(keys) == list, "Invalid types!: data %s, keys %s", type(data), type(keys))
-        enforce(len(data.shape) == 2 and data.shape[1] == 6162, "Invalid shape! %s", data.shape)
-        enforce(len(keys) == data.shape[0], "# keys (%s) does not match # data elements (%s)!", len(keys), data.shape[1])
-        
-        # Calculate train / test split
-        num_train = int(data.shape[0] * train_test_split)
-        num_test = data.shape[0] - num_train
-
-        enforce(num_train > 0, "must have at least 1 training sample; got %s train, %s test from %s elements, %s train / test split",
-            num_train, num_test, data.shape[0], train_test_split)
-
-        # Split data
-        x_train, x_test = np.split(data, [ num_train ], 0)
-        print("split data %s => x_train %s, x_test %s with train / test split of %s"%(
-            data.shape, x_train.shape, x_test.shape, train_test_split))
+        enforce(self.autosave_frequency > 0, "autosave frequency must be > 0, got %s", self.autosave_frequency)
+        enforce(batch_size > 0, "batch size must be > 0, got %s", batch_size)
+        x_train, x_test = self.data
 
         """ Train model """
         print("Training model for %s epochs (epochs %s -> %s)"%(epochs, self.current_epoch, self.current_epoch + epochs))
@@ -260,11 +271,11 @@ class AutoencoderModel:
         last_saved_epoch = self.current_epoch
 
         while epochs > 0:
-            print("Training on epoch %s -> %s"%(self.current_epoch, self.current_epoch + autosave_frequency))
-            self.autoencoder.fit(x_train, x_train, epochs=autosave_frequency, batch_size=batch_size)
+            print("Training on epoch %s -> %s"%(self.current_epoch, self.current_epoch + self.autosave_frequency))
+            self.autoencoder.fit(x_train, x_train, epochs=self.autosave_frequency, batch_size=batch_size)
 
-            epochs -= autosave_frequency
-            self.current_epoch += autosave_frequency
+            epochs -= self.autosave_frequency
+            self.current_epoch += self.autosave_frequency
 
             if next_snapshot and self.current_epoch >= next_snapshot:
                 print("Saving snapshot at epoch %s"%(self.current_epoch))
@@ -323,16 +334,16 @@ if __name__ == '__main__':
     """ Run everything """
     dataset = load_dataset(data_url)
     autoencoder = AutoencoderModel(
+            dataset=dataset,
+            train_test_split=train_test_split,
             autoload_path=model_path,
             autosave_path=autosave_path,
+            autosave_frequency=autosave_freq,
             model_snapshot_path=snapshot_path,
             model_snapshot_frequency=snapshot_freq)
 
     if args['train']:
         autoencoder.train(
             epochs=num_epochs,
-            dataset=dataset,
-            train_test_split=train_test_split,
-            batch_size=batch_size,
-            autosave_frequency=autosave_freq)
+            batch_size=batch_size)
 
