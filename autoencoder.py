@@ -168,27 +168,6 @@ class AutoencoderModel:
             if not self.load(autoload_path):
                 self.build()
 
-    def get_encoder_and_decoder (self):
-        enforce(len(self.autoencoder.layers) == 8,
-            "autoencoder model has changed, expected 8 layers but got %s:\n\t%s",
-            len(self.autoencoder.layers), '\n\t'.join(['%s: %s'%values for values in enumerate(self.autoencoder.layers) ]))
-
-        print("encoder:")
-        encoder_input = Input(shape=(self.input_size,))
-        encoder = encoder_input
-        for layer in self.autoencoder.layers[0:4]:
-            encoder = layer(encoder)
-        self.encoder = Model(encoder_input, encoder)
-        self.encoder.summary()
-
-        print("decoder:")
-        decoder_input = Input(shape=(self.encoding_size,))
-        decoder = decoder_input
-        for layer in self.autoencoder.layers[4:8]:
-            decoder = layer(decoder)
-        self.decoder = Model(decoder_input, decoder)
-        self.decoder.summary()
-
     def load (self, path=None):
         """ Loads keras model and other data from a directory, given by path.
 
@@ -286,6 +265,27 @@ class AutoencoderModel:
 
         if self.autosave_path:
             self.save()
+
+    def get_encoder_and_decoder (self):
+        enforce(len(self.autoencoder.layers) == 8,
+            "autoencoder model has changed, expected 8 layers but got %s:\n\t%s",
+            len(self.autoencoder.layers), '\n\t'.join(['%s: %s'%values for values in enumerate(self.autoencoder.layers) ]))
+
+        print("encoder:")
+        encoder_input = Input(shape=(self.input_size,))
+        encoder = encoder_input
+        for layer in self.autoencoder.layers[0:4]:
+            encoder = layer(encoder)
+        self.encoder = Model(encoder_input, encoder)
+        self.encoder.summary()
+
+        print("decoder:")
+        decoder_input = Input(shape=(self.encoding_size,))
+        decoder = decoder_input
+        for layer in self.autoencoder.layers[4:8]:
+            decoder = layer(decoder)
+        self.decoder = Model(decoder_input, decoder)
+        self.decoder.summary()
 
     def train (self, epochs, batch_size=32):
         
