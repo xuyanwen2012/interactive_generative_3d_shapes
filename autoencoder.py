@@ -11,6 +11,12 @@ Usage:
     [--snapshot-path <snapshot_path>]
     [--batch-size <batch_size>]
     [--train-test-split <split_ratio>]
+  autoencoder.py check
+    [--model <model_path>]
+    [--use-dataset <dataset_path>]
+    [--train-test-split <split_ratio>]
+  autoencoder.py generate <output> <count>
+    [--model <model_path>]
 
 Options:
   -h --help                         show this screen
@@ -291,6 +297,14 @@ class AutoencoderModel:
             print("Autosaving...")
             self.save()
 
+    def evaluate_using_test_data (self):
+        x_train, x_test = self.data
+        print("evaluation using test data (shape %s) TBD"%(x_test.shape,))
+
+    def generate (self, count, output_path):
+        print("generation TBD")
+
+
 DEFAULT_DATASET = 'https://raw.githubusercontent.com/SeijiEmery/shape-net-data/master/datasets/training-lv5.pkl'
 
 class ArgumentParsingException (Exception):
@@ -317,6 +331,11 @@ if __name__ == '__main__':
     try:
         if args['train']:
             num_epochs = parse_arg(int, '<num_epochs>', min_bound=1)
+        elif args['check']:
+            pass
+        elif args['generate']:
+            output_path = parse_arg(str, '<output>') 
+            count = parse_arg(int, '<count>', min_bound=1)
 
         data_url = args['--use-dataset'] or DEFAULT_DATASET
         model_path = args['--model']
@@ -347,3 +366,10 @@ if __name__ == '__main__':
             epochs=num_epochs,
             batch_size=batch_size)
 
+    elif args['check']:
+        autoencoder.evaluate_using_test_data()
+
+    elif args['generate']:
+        autoencoder.generate(
+            count=count,
+            output_path=output_path)
