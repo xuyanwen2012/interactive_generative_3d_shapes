@@ -8,11 +8,19 @@ const Reconstructor = require('./core/reconstructor');
 const OBJExporter = require('three-obj-exporter');
 const exporter = new OBJExporter();
 
-function reconstruct (args) {
-    console.dir(args);
+function reconstruct(args) {
+  console.dir(args);
+
+  let data;
+  if (args.data) {
+    // Directly reconstruct data
+    data = args.data;
+  } else {
+    // Reading data from file
     console.log(`loading ${args.input}`);
-    const data = JSON.parse(fs.readFileSync(args.input));
-  
+    data = JSON.parse(fs.readFileSync(args.input));
+  }
+
   console.log(`reconstructing with ${args.levels} subdivision levels`);
   const reconstructor = new Reconstructor(data);
   reconstructor.modify(args.levels);
@@ -22,11 +30,7 @@ function reconstruct (args) {
   const result = exporter.parse(mesh);
 
   console.log(`saving as ${args.output}`);
-    fs.writeFileSync(args.output, result, 'utf8');
-    // fs.writeFile(args.output, result, 'utf8', (err) => {
-    //     if (err) throw err;
-    //     console.log('done');
-    // });
+  fs.writeFileSync(args.output, result, 'utf8');
 }
 
 module.exports = reconstruct;
