@@ -323,7 +323,7 @@ class AutoencoderModel:
             with open(summary_path, 'r') as f:
                 return json.loads(f.read())
 
-        summary = self.summarize(data=data, model_path=model_path, **self.load_model(model_path))
+        summary = self.summarize_model(data=data, model_path=model_path, **self.load_model(model_path))
         self.save_model_summary(model_path, summary)
         return summary
 
@@ -334,16 +334,47 @@ class AutoencoderModel:
         with open(summary_path, 'w') as f:
             f.write(json.dumps(summary))
 
-    def summarize_snapshots (self, rebuild=False):
+    def summarize_snapshots (self, model_path, rebuild=False):
         summaries = []
         print("summarizing...")
-        snapshots = list(os.listdir(self.model_snapshot_path))
+
+        snapshot_path = os.path.join(model_path, 'snapshots')
+        snapshots = list(os.listdir(snapshot_path))
         for i, snapshot in enumerate(snapshots):
-            snapshot_path = os.path.join(self.model_snapshot_path, snapshot)
-            summaries.append(self.load_model_summary(snapshot_path, rebuild))
+            path = os.path.join(snapshot_path, snapshot)
+            summaries.append(self.load_model_summary(path, rebuild))
             print("%s / %s"%(i+1, len(snapshots)))
         summaries.sort(key=lambda x: x['epoch'])
-        print(summaries)
+
+        def csv_header (summary):
+            for key, value in summary.items():
+                if type(value) == dict:
+                    for k, v in value.items():
+                        yield '%s.%s'%(key, k)
+                else:
+                    yield key
+
+        def csv_values (summary):
+            for value in summary.values():
+                if type(value) == dict:
+                    for value in value.values():
+                        yield value
+                else:
+                    yield value
+
+        # print(list(csv_header(summaries[0])))
+        # for summary in summaries:
+        #     print(set(map(type, csv_values(summary))))
+        #     print(list(csv_values(summary)))
+        csv_data = '\n'.join([ ', '.join(csv_header(summaries[0])) ] + [
+            ', '.join(map(str, csv_values(summary)))
+            for summary in summaries
+        ])
+        path = os.path.join('summary', '%s.csv'%model_path.split('/')[0])
+        makedirs(path)
+        print("saving '%s'"%path)
+        with open(path, 'w') as f:
+            f.write(csv_data)
 
     def build(self):
         """ Builds a new model.
@@ -597,7 +628,7 @@ if __name__ == '__main__':
             batch_size=batch_size)
 
     elif args['summarize-runs']:
-        autoencoder.summarize_snapshots()
+        autoencoder.summarize_snapshots(model_path)
 
     elif args['test']:
         autoencoder.evaluate_using_test_data()
