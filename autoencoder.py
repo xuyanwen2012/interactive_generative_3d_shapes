@@ -275,60 +275,21 @@ class AutoencoderModel:
         print("Saving as '%s'" % model_path)
         self.autoencoder.save(model_path)
 
-        x_train, x_test = self.data
-        z_train, z_test = map(self.encoder.predict, (x_train, x_test))
-        y_train, y_test = map(self.decoder.predict, (z_train, z_test))
-
-        train_loss = self.autoencoder.evaluate(x_train, x_train)
-        test_loss  = self.autoencoder.evaluate(x_test, x_test)
-        print("Losses: %s train / %s test"%(train_loss, test_loss))
-        # print(np.mean(x_train))
-        # print(np.var(x_train))
-        # print(np.min(x_train))
-        # print(np.max(x_train))
-
         # Save additional persistent state (current_epoch, etc)
         state_path = os.path.join(path, 'model_state.json')
         with open(state_path, 'w') as f:
             f.write(json.dumps({
                 'current_epoch': self.current_epoch,
-
-                # Write losses
-                'train_loss': float(train_loss),
-                'test_loss': float(test_loss),
-
-                # Write means
-                'x_train_mean': float(np.mean(x_train)),
-                'x_test_mean': float(np.mean(x_test)),
-                'y_train_mean': float(np.mean(y_train)),
-                'y_test_mean': float(np.mean(y_test)),
-                'z_train_mean': float(np.mean(z_train)),
-                'z_test_mean': float(np.mean(z_test)),
-
-                # Write variances
-                'x_train_var': float(np.var(x_train)),
-                'x_test_var': float(np.var(x_test)),
-                'y_train_var': float(np.var(y_train)),
-                'y_test_var': float(np.var(y_test)),
-                'z_train_var': float(np.var(z_train)),
-                'z_test_var': float(np.var(z_test)),
-
-                # Write mins
-                'x_train_min': float(np.min(x_train)),
-                'x_test_min': float(np.min(x_test)),
-                'y_train_min': float(np.min(y_train)),
-                'y_test_min': float(np.min(y_test)),
-                'z_train_min': float(np.min(z_train)),
-                'z_test_min': float(np.min(z_test)),
-
-                # Write maxes
-                'x_train_max': float(np.max(x_train)),
-                'x_test_max': float(np.max(x_test)),
-                'y_train_max': float(np.max(y_train)),
-                'y_test_max': float(np.max(y_test)),
-                'z_train_max': float(np.max(z_train)),
-                'z_test_max': float(np.max(z_test)),
             }))
+
+        # Summarize model
+        self.save_model_summary(path, 
+            self.summarize_model(path, 
+                data=self.data, 
+                autoencoder=self.autoencoder,
+                encoder=self.encoder,
+                decoder=self.decoder,
+                epoch=self.current_epoch))        
 
     def summarize_model (self, model_path, data, autoencoder, encoder, decoder, epoch):
         print("summarizing '%s'"%model_path)
@@ -337,6 +298,7 @@ class AutoencoderModel:
         y_train, y_test = map(decoder.predict, (z_train, z_test))
         train_loss = autoencoder.evaluate(x_train, x_train)
         test_loss  = autoencoder.evaluate(x_test, x_test)
+        print("train_loss: %s, test_loss: %s"%(train_loss, test_loss))
         summary = { 
             'epoch':        epoch,  
             'train_loss':   train_loss, 
@@ -356,9 +318,9 @@ class AutoencoderModel:
         summarize_distribution('z_train', z_train)
         summarize_distribution('z_test', z_test)
 
-        print(z_train.shape)
+        # print(z_train.shape)
         for i in range(10):
-            print(z_train[:,i].shape)
+            # print(z_train[:,i].shape)
             summarize_distribution('z_train[%d]'%i, z_train[:,i])
         return summary
 
@@ -376,6 +338,7 @@ class AutoencoderModel:
 
     def save_model_summary (self, model_path, summary=None):
         summary_path = model_path and os.path.join(model_path, 'summary.json')
+        print("saving '%s'"%summary_path)
         makedirs(summary_path)
         with open(summary_path, 'w') as f:
             f.write(json.dumps(summary))
@@ -432,7 +395,6 @@ class AutoencoderModel:
         for layer in model.layers[0:4]:
             encoder = layer(encoder)
         encoder = Model(encoder_input, encoder)
-        # self.encoder.summary()
 
         print("decoder:")
         decoder_input = Input(shape=(self.encoding_size,))
@@ -440,7 +402,6 @@ class AutoencoderModel:
         for layer in model.layers[4:8]:
             decoder = layer(decoder)
         decoder = Model(decoder_input, decoder)
-        # self.decoder.summary()
         return encoder, decoder
 
     def train(self, epochs, batch_size=32):
