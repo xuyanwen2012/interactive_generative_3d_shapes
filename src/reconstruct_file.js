@@ -9,7 +9,7 @@ const OBJExporter = require('three-obj-exporter');
 const exporter = new OBJExporter();
 
 function reconstruct (args) {
-    console.dir(args);
+    // console.dir(args);
     console.log(`loading ${args.input}`);
     const data = JSON.parse(fs.readFileSync(args.input));
   

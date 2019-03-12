@@ -50,7 +50,7 @@ function main() {
   });
 
   const getAllFileArgumentsAndRunParallel = (baseArgs, each) => (args) => {
-    console.dir(args);
+    // console.dir(args);
     args.__proto__ = baseArgs;             // provide defaults for optional args
     let tasks = locateFiles(args);
     if (!args.rebuild) {
