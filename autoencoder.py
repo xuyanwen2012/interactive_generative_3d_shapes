@@ -11,6 +11,9 @@ Usage:
     [--snapshot-path <snapshot_path>]
     [--batch-size <batch_size>]
     [--train-test-split <split_ratio>]
+  autoencoder.py summarize-runs <model_path>
+    [--use-dataset <dataset_path>]
+    [--train-test-split <split_ratio>]
   autoencoder.py test
     [--model <model_path>]
     [--use-dataset <dataset_path>]
@@ -56,6 +59,8 @@ from docopt import docopt
 from keras.models import Sequential
 from keras.layers import Input, Dense, Dropout, Activation
 from keras.models import Model, load_model
+from keras.losses import mean_squared_error
+import keras
 
 """ Helper functions """
 
@@ -131,6 +136,13 @@ def validate_and_split_data(dataset, train_test_split=0.75):
 
     return x_train, x_test
 
+class LossHistory(keras.callbacks.Callback):
+    def on_train_begin(self, logs={}):
+        self.losses = []
+
+    def on_batch_end(self, batch, logs={}):
+        self.losses.append((logs.get('loss'), logs.get('val-loss')))
+
 
 class AutoencoderModel:
     def __init__(
@@ -195,6 +207,23 @@ class AutoencoderModel:
             if not self.load(autoload_path):
                 self.build()
 
+    def load_model (self, path):
+        model_path = os.path.join(path, 'model.h5')
+        state_path = os.path.join(path, 'model_state.json')
+        if os.path.exists(model_path):
+            enforce(os.path.exists(state_path), "could not load model state from %s"%state_path)
+            with open(state_path, 'r') as f:
+                state = json.loads(f.read())
+            autoencoder = load_model(model_path)
+            encoder, decoder = self.get_encoder_and_decoder(autoencoder)
+            return {
+                'epoch': state['current_epoch'],
+                'autoencoder': autoencoder,
+                'encoder': encoder,
+                'decoder': decoder,
+            }
+        return None
+
     def load(self, path=None):
         """ Loads keras model and other data from a directory, given by path.
 
@@ -209,27 +238,16 @@ class AutoencoderModel:
         current training epoch.
         """
         path = path or self.autoload_path
-        model_path = os.path.join(path, 'model.h5')
-        state_path = os.path.join(path, 'model_state.json')
-
-        if os.path.exists(model_path):
-            # Model state: dict w/ persistent elements like current_epoch, saved persistently in additon to the keras model
-            if os.path.exists(state_path):
-                with open(state_path, 'r') as f:
-                    state = json.loads(f.read())
-                    self.current_epoch = state['current_epoch']
-            else:
-                print("Could not load model state ('%s' missing)" % state_path)
-
-            print("Loading model from '%s'" % model_path)
-            self.autoencoder = load_model(model_path)
-            print("Loaded autoencoder:")
-            self.autoencoder.summary()
-            self.get_encoder_and_decoder()
+        result = self.load_model(path)
+        if result:
+            print("Loaded model from %s"%path)
+            self.current_epoch = result['epoch']
+            self.autoencoder = result['autoencoder']
+            self.encoder = result['encoder']
+            self.decoder = result['decoder']
             return True
-        else:
-            print("Can't load model from '%s', file does not exist" % path)
-            return False
+        print("Can't load model from '%s', file does not exist" % path)
+        return False
 
     def save(self, path=None):
         """ Saves keras model and other data to a directory, given by path.
@@ -257,12 +275,121 @@ class AutoencoderModel:
         print("Saving as '%s'" % model_path)
         self.autoencoder.save(model_path)
 
+        x_train, x_test = self.data
+        z_train, z_test = map(self.encoder.predict, (x_train, x_test))
+        y_train, y_test = map(self.decoder.predict, (z_train, z_test))
+
+        train_loss = self.autoencoder.evaluate(x_train, x_train)
+        test_loss  = self.autoencoder.evaluate(x_test, x_test)
+        print("Losses: %s train / %s test"%(train_loss, test_loss))
+        # print(np.mean(x_train))
+        # print(np.var(x_train))
+        # print(np.min(x_train))
+        # print(np.max(x_train))
+
         # Save additional persistent state (current_epoch, etc)
         state_path = os.path.join(path, 'model_state.json')
         with open(state_path, 'w') as f:
             f.write(json.dumps({
                 'current_epoch': self.current_epoch,
+
+                # Write losses
+                'train_loss': float(train_loss),
+                'test_loss': float(test_loss),
+
+                # Write means
+                'x_train_mean': float(np.mean(x_train)),
+                'x_test_mean': float(np.mean(x_test)),
+                'y_train_mean': float(np.mean(y_train)),
+                'y_test_mean': float(np.mean(y_test)),
+                'z_train_mean': float(np.mean(z_train)),
+                'z_test_mean': float(np.mean(z_test)),
+
+                # Write variances
+                'x_train_var': float(np.var(x_train)),
+                'x_test_var': float(np.var(x_test)),
+                'y_train_var': float(np.var(y_train)),
+                'y_test_var': float(np.var(y_test)),
+                'z_train_var': float(np.var(z_train)),
+                'z_test_var': float(np.var(z_test)),
+
+                # Write mins
+                'x_train_min': float(np.min(x_train)),
+                'x_test_min': float(np.min(x_test)),
+                'y_train_min': float(np.min(y_train)),
+                'y_test_min': float(np.min(y_test)),
+                'z_train_min': float(np.min(z_train)),
+                'z_test_min': float(np.min(z_test)),
+
+                # Write maxes
+                'x_train_max': float(np.max(x_train)),
+                'x_test_max': float(np.max(x_test)),
+                'y_train_max': float(np.max(y_train)),
+                'y_test_max': float(np.max(y_test)),
+                'z_train_max': float(np.max(z_train)),
+                'z_test_max': float(np.max(z_test)),
             }))
+
+    def summarize_model (self, model_path, data, autoencoder, encoder, decoder, epoch):
+        print("summarizing '%s'"%model_path)
+        x_train, x_test = data
+        z_train, z_test = map(encoder.predict, (x_train, x_test))
+        y_train, y_test = map(decoder.predict, (z_train, z_test))
+        train_loss = autoencoder.evaluate(x_train, x_train)
+        test_loss  = autoencoder.evaluate(x_test, x_test)
+        summary = { 
+            'epoch':        epoch,  
+            'train_loss':   train_loss, 
+            'test_loss':    test_loss 
+        }
+        def summarize_distribution (name, x):
+            summary[name] = {
+                'min':      float(np.min(x)),
+                'max':      float(np.max(x)),
+                'mean':     float(np.mean(x)),
+                'var':      float(np.var(x)),
+            }
+        summarize_distribution('x_train', x_train)
+        summarize_distribution('x_test', x_test)
+        summarize_distribution('y_train', y_train)
+        summarize_distribution('y_test', y_test)
+        summarize_distribution('z_train', z_train)
+        summarize_distribution('z_test', z_test)
+
+        print(z_train.shape)
+        for i in range(10):
+            print(z_train[:,i].shape)
+            summarize_distribution('z_train[%d]'%i, z_train[:,i])
+        return summary
+
+    def load_model_summary (self, model_path, data=None, rebuild=False):
+        data = data or self.data
+        summary_path = model_path and os.path.join(model_path, 'summary.json')
+        if not rebuild and os.path.exists(summary_path):
+            print("loading '%s'"%summary_path)
+            with open(summary_path, 'r') as f:
+                return json.loads(f.read())
+
+        summary = self.summarize(data=data, model_path=model_path, **self.load_model(model_path))
+        self.save_model_summary(model_path, summary)
+        return summary
+
+    def save_model_summary (self, model_path, summary=None):
+        summary_path = model_path and os.path.join(model_path, 'summary.json')
+        makedirs(summary_path)
+        with open(summary_path, 'w') as f:
+            f.write(json.dumps(summary))
+
+    def summarize_snapshots (self, rebuild=False):
+        summaries = []
+        print("summarizing...")
+        snapshots = list(os.listdir(self.model_snapshot_path))
+        for i, snapshot in enumerate(snapshots):
+            snapshot_path = os.path.join(self.model_snapshot_path, snapshot)
+            summaries.append(self.load_model_summary(snapshot_path, rebuild))
+            print("%s / %s"%(i+1, len(snapshots)))
+        summaries.sort(key=lambda x: x['epoch'])
+        print(summaries)
 
     def build(self):
         """ Builds a new model.
@@ -286,34 +413,35 @@ class AutoencoderModel:
         print("compiling...")
         self.autoencoder.compile(optimizer='adam', loss='mean_squared_error')
 
-        print("Loaded autoencoder:")
+        print("Built autoencoder:")
         self.autoencoder.summary()
-        self.get_encoder_and_decoder()
+        self.encoder, self.decoder = self.get_encoder_and_decoder(self.autoencoder)
 
         if self.autosave_path:
             self.save()
 
-    def get_encoder_and_decoder(self):
-        enforce(len(self.autoencoder.layers) == 8,
+    def get_encoder_and_decoder(self, model):
+        enforce(len(model.layers) == 8,
                 "autoencoder model has changed, expected 8 layers but got %s:\n\t%s",
-                len(self.autoencoder.layers),
-                '\n\t'.join(['%s: %s' % values for values in enumerate(self.autoencoder.layers)]))
+                len(model.layers),
+                '\n\t'.join(['%s: %s' % values for values in enumerate(model.layers)]))
 
         print("encoder:")
         encoder_input = Input(shape=(self.input_size,))
         encoder = encoder_input
-        for layer in self.autoencoder.layers[0:4]:
+        for layer in model.layers[0:4]:
             encoder = layer(encoder)
-        self.encoder = Model(encoder_input, encoder)
-        self.encoder.summary()
+        encoder = Model(encoder_input, encoder)
+        # self.encoder.summary()
 
         print("decoder:")
         decoder_input = Input(shape=(self.encoding_size,))
         decoder = decoder_input
-        for layer in self.autoencoder.layers[4:8]:
+        for layer in model.layers[4:8]:
             decoder = layer(decoder)
-        self.decoder = Model(decoder_input, decoder)
-        self.decoder.summary()
+        decoder = Model(decoder_input, decoder)
+        # self.decoder.summary()
+        return encoder, decoder
 
     def train(self, epochs, batch_size=32):
 
@@ -334,7 +462,11 @@ class AutoencoderModel:
 
         while epochs > 0:
             print("Training on epoch %s -> %s" % (self.current_epoch, self.current_epoch + self.autosave_frequency))
-            self.autoencoder.fit(x_train, x_train, epochs=self.autosave_frequency, batch_size=batch_size)
+
+            csv_logger = keras.callbacks.CSVLogger(os.path.join(self.autosave_path, 'log.csv'), separator=',', append=False)
+            result = self.autoencoder.fit(x_train, x_train, validation_data=(x_test, x_test), callbacks=[csv_logger],
+                epochs=self.autosave_frequency, batch_size=batch_size)
+            print(result)
 
             epochs -= self.autosave_frequency
             self.current_epoch += self.autosave_frequency
@@ -504,6 +636,9 @@ if __name__ == '__main__':
             interp = args['<interp>']
             if interp is not None:
                 interp = parse_arg(float, '<interp>', min_bound=0, max_bound=1)
+        elif args['summarize-runs']:
+            model_path = args['<model_path>']
+            snapshot_path = os.path.join(model_path, 'snapshots')
 
     except ArgumentParsingException as e:
         print("Invalid argument: %s" % e)
@@ -524,6 +659,9 @@ if __name__ == '__main__':
         autoencoder.train(
             epochs=num_epochs,
             batch_size=batch_size)
+
+    elif args['summarize-runs']:
+        autoencoder.summarize_snapshots()
 
     elif args['test']:
         autoencoder.evaluate_using_test_data()
