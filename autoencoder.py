@@ -29,6 +29,14 @@ Usage:
     [--model <model_path>]
     [--use-dataset <dataset_path>]
     [--train-test-split <split_ratio>]
+  autoencoder.py gen-latent-codes <output>
+    [--model <model_path>]
+    [--use-dataset <dataset_path>]
+    [--train-test-split <split_ratio>]
+  autoencoder.py gen-latent-models <output>
+    [--model <model_path>]
+    [--use-dataset <dataset_path>]
+    [--train-test-split <split_ratio>]
   autoencoder.py interpolate <key1> <key2>
     [--model <model_path>]
     [--use-dataset <dataset_path>]
@@ -52,6 +60,7 @@ import numpy as np
 import json
 import sys
 import os
+import shutil
 import subprocess
 from docopt import docopt
 from keras.models import Sequential
@@ -331,6 +340,25 @@ class AutoencoderModel:
         self.save_model_summary(model_path, summary)
         return summary
 
+    def load_this_model_summary (self, model_path):
+        summary_path = model_path and os.path.join(model_path, 'summary.json')
+        if os.path.exists(summary_path):
+            print("loading '%s'"%summary_path)
+            with open(summary_path, 'r') as f:
+                return json.loads(f.read())
+
+        summary = self.summarize_model(os.path.join(self.model_snapshot_path, str(self.current_epoch)), 
+            data=self.data, 
+            autoencoder=self.autoencoder,
+            encoder=self.encoder,
+            decoder=self.decoder,
+            epoch=self.current_epoch)
+        self.save_model_summary(
+            os.path.join(self.model_snapshot_path, 
+            str(self.current_epoch)), 
+            summary)
+        return summary
+
     def save_model_summary (self, model_path, summary=None):
         summary_path = model_path and os.path.join(model_path, 'summary.json')
         print("saving '%s'"%summary_path)
@@ -558,6 +586,121 @@ class AutoencoderModel:
                 key
             ))
 
+    def generate_latent_codes (self, model_path, output_path):
+        pass
+
+    def generate_latent_models (self, model_path, output_path):
+        print("generating...")
+        gencount = 0
+        json_path = os.path.join(output_path, 'json')
+        def save_model(kind, label, z):
+            nonlocal gencount
+            gencount += 1
+            path = os.path.join(json_path, label, kind)
+            makedirs(path)
+            y = self.decoder.predict(np.array([ z ]))
+            with open('%s.json'%path, 'w') as f:
+                f.write(json.dumps(list(map(float, y[0]))))
+
+        summary = self.load_this_model_summary(model_path)
+        z_train, z_test = summary['z_train'], summary['z_test']
+        z_nonzero = np.array([ 1 if summary['z_train[%s]'%i]['mean'] != 0 else 0 for i in range(10) ])
+        z_allzero = np.ones(10) - z_nonzero
+
+        min_, max_, mean, stdev = z_train['min'], z_train['max'] or 1, z_train['mean'] or 5, z_train['var'] ** 0.5 or 0.25
+        save_model('all-0', 'all', np.ones(10) * 0)
+        save_model('all-1', 'all', np.ones(10))
+        save_model('all-half', 'all', np.ones(10) * 0.5)
+        save_model('all-2', 'all', np.ones(10) * 2)
+        if z_train['mean'] != 0:
+            save_model('mean', 'all', np.ones(10) * z_train['mean'])
+            save_model('mean-minus-1', 'all', np.ones(10) * (z_train['mean'] - z_train['var'] ** 0.5))
+            save_model('mean-minus-2', 'all', np.ones(10) * (z_train['mean'] - z_train['var'] ** 0.5 * 2))
+            save_model('mean-plus-1', 'all', np.ones(10) * (z_train['mean'] + z_train['var'] ** 0.5))
+            save_model('mean-plus-2', 'all', np.ones(10) * (z_train['mean'] + z_train['var'] ** 0.5 * 2))
+        if z_train['min'] != 0:
+            save_model('min', 'all', np.ones(10) * z_train['min'])
+        if z_train['max'] != 0:
+            save_model('max', 'all', np.ones(10) * z_train['max'])
+            save_model('max-2', 'all', np.ones(10) * z_train['max'] * 2)
+            save_model('max-10', 'all', np.ones(10) * z_train['max'] * 10)
+
+        if np.any(z_nonzero):
+            save_model('all-1', 'all-nonzero', z_nonzero)
+            save_model('all-half', 'all-nonzero', z_nonzero * 0.5)
+            save_model('all-2', 'all-nonzero', z_nonzero * 2)
+            if z_train['mean'] != 0:
+                save_model('mean', 'all-nonzero', z_nonzero * z_train['mean'])
+                save_model('mean-minus-1', 'all-nonzero', z_nonzero * (z_train['mean'] - z_train['var'] ** 0.5))
+                save_model('mean-minus-2', 'all-nonzero', z_nonzero * (z_train['mean'] - z_train['var'] ** 0.5 * 2))
+                save_model('mean-plus-1', 'all-nonzero', z_nonzero * (z_train['mean'] + z_train['var'] ** 0.5))
+                save_model('mean-plus-2', 'all-nonzero', z_nonzero * (z_train['mean'] + z_train['var'] ** 0.5 * 2))
+            if z_train['min'] != 0:
+                save_model('min', 'all-nonzero', z_nonzero * z_train['min'])
+            if z_train['max'] != 0:
+                save_model('max', 'all-nonzero', z_nonzero * z_train['max'])
+                save_model('max-2', 'all-nonzero', z_nonzero * z_train['max'] * 2)
+                save_model('max-10', 'all-nonzero', z_nonzero * z_train['max'] * 10)
+
+        if np.any(z_allzero):
+            save_model('all-1', 'all-zero', z_allzero)
+            save_model('all-half', 'all-zero', z_allzero * 0.5)
+            save_model('all-2', 'all-zero', z_allzero * 2)
+            if z_train['mean'] != 0:
+                save_model('mean', 'all-zero', z_allzero * z_train['mean'])
+                save_model('mean-minus-1', 'all-zero', z_allzero * (z_train['mean'] - z_train['var'] ** 0.5))
+                save_model('mean-minus-2', 'all-zero', z_allzero * (z_train['mean'] - z_train['var'] ** 0.5 * 2))
+                save_model('mean-plus-1', 'all-zero', z_allzero * (z_train['mean'] + z_train['var'] ** 0.5))
+                save_model('mean-plus-2', 'all-zero', z_allzero * (z_train['mean'] + z_train['var'] ** 0.5 * 2))
+            if z_train['min'] != 0:
+                save_model('min', 'all-zero', z_allzero * z_train['min'])
+            if z_train['max'] != 0:
+                save_model('max', 'all-zero', z_allzero * z_train['max'])
+                save_model('max-2', 'all-zero', z_allzero * z_train['max'] * 2)
+                save_model('max-10', 'all-zero', z_allzero * z_train['max'] * 10)
+
+        for i in range(10):
+            latent = summary['z_train[%s]'%i]
+            z = np.array([ 0 if i != j else 1 for j in range(10) ])
+            max_, mean, stdev = latent['max'] or 1, latent['mean'] or 5, latent['var'] ** 0.5 or 0.25
+            minmaxrange = max_ - latent['min']
+            if latent['min']:
+                save_model('min', 'non-zero-%s'%i, z * latent['min'])
+
+            if latent['mean']:
+                for k in range(10+1):
+                    save_model('interp-%d'%k, 'non-zero-%s'%i, z * k / 10.0 * minmaxrange + latent['min'])
+                save_model('mean', 'non-zero-%s'%i, z * mean)
+                save_model('mean-minus-1', 'non-zero-%s'%i, z * (mean - stdev))
+                save_model('mean-minus-2', 'non-zero-%s'%i, z * (mean - stdev * 2))
+                save_model('mean-plus-1', 'non-zero-%s'%i, z * (mean + stdev))
+                save_model('mean-plus-2', 'non-zero-%s'%i, z * (mean + stdev * 2))
+                save_model('max', 'non-zero-%s'%i, z * max_)
+                save_model('max-2', 'non-zero-%s'%i, z * max_ * 2)
+                save_model('max-10', 'non-zero-%s'%i, z * max_ * 10)
+            else:
+                for k in range(10+1):
+                    save_model('interp-%d'%k, 'zero-%s'%i, z * k / 10.0)
+                save_model('mean', 'zero-%s'%i, z * mean)
+                save_model('mean-minus-1', 'zero-%s'%i, z * (mean - stdev))
+                save_model('mean-minus-2', 'zero-%s'%i, z * (mean - stdev * 2))
+                save_model('mean-plus-1', 'zero-%s'%i, z * (mean + stdev))
+                save_model('mean-plus-2', 'zero-%s'%i, z * (mean + stdev * 2))
+                save_model('max', 'zero-%s'%i, z * max_)
+                save_model('max-2', 'zero-%s'%i, z * max_ * 2)
+                save_model('max-10', 'zero-%s'%i, z * max_ * 10)
+
+        print("generated %s files"%gencount)
+        print("building objs...")
+        for dir in os.listdir(json_path):
+            json_files = os.path.join(json_path, dir)
+            target_path = os.path.join(output_path, dir)
+            if not os.path.exists(target_path):
+                os.makedirs(target_path)
+            subprocess.run(['node', 'index.js', 'reconstruct', json_files, target_path])
+            shutil.rmtree(json_files)
+
+
 DEFAULT_DATASET = 'https://raw.githubusercontent.com/SeijiEmery/shape-net-data/master/datasets/training-lv5.pkl'
 
 
@@ -585,7 +728,6 @@ if __name__ == '__main__':
         except ValueError:
             enforce_arg(False, "%s should be %s, got '%s'", key, str(T), args[key])
 
-
     try:
         data_url = args['--use-dataset'] or DEFAULT_DATASET
         model_path = args['--model']
@@ -601,14 +743,15 @@ if __name__ == '__main__':
             num_epochs = parse_arg(int, '<num_epochs>', min_bound=1)
         elif args['test']:
             pass
-        elif args['repredict']:
+        elif args['repredict'] or args['gen-latent-codes'] or args['gen-latent-models']:
             output_path = args['<output>'] or 'repredicted'
-            count = parse_arg(int, '<count>', min_bound=1)
-            if args['snapshot']:
-                snapshot_id = parse_arg(str, '<snapshot>')
-                model_path = os.path.join(model_path, 'snapshots', snapshot_id)
-                enforce_arg(os.path.exists(model_path), "no snapshot %s at %s", snapshot_id, model_path)
-                output_path = os.path.join(output_path, snapshot_id)
+            if args['repredict']:
+                count = parse_arg(int, '<count>', min_bound=1)
+                if args['snapshot']:
+                    snapshot_id = parse_arg(str, '<snapshot>')
+                    model_path = os.path.join(model_path, 'snapshots', snapshot_id)
+                    enforce_arg(os.path.exists(model_path), "no snapshot %s at %s", snapshot_id, model_path)
+                    output_path = os.path.join(output_path, snapshot_id)
         elif args['interpolate']:
             key1 = parse_arg(str, '<key1>')
             key2 = parse_arg(str, '<key2>')
@@ -648,6 +791,16 @@ if __name__ == '__main__':
     elif args['repredict']:
         autoencoder.repredict(
             count=count,
+            output_path=output_path)
+
+    elif args['gen-latent-models']:
+        autoencoder.generate_latent_models(
+            model_path=model_path, 
+            output_path=output_path)
+
+    elif args['gen-latent-codes']:
+        autoencoder.generate_latent_codes(
+            model_path=model_path,
             output_path=output_path)
 
     elif args['interpolate']:
