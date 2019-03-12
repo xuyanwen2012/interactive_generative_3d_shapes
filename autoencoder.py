@@ -289,7 +289,11 @@ class AutoencoderModel:
         y_train, y_test = map(decoder.predict, (z_train, z_test))
         train_loss = autoencoder.evaluate(x_train, x_train)
         test_loss  = autoencoder.evaluate(x_test, x_test)
-        print("train_loss: %s, test_loss: %s"%(train_loss, test_loss))
+        print("train_loss: %s, test_loss: %s, test/train loss %0.1f%%, z-var %s, %s, y/x var %0.1f%%, %0.1f%%"%(
+            train_loss, test_loss, test_loss / train_loss * 100,
+            np.var(z_train), np.var(z_test), 
+            np.var(y_train) / np.var(x_train) * 100,
+            np.var(y_test) / np.var(x_test) * 100))
         summary = { 
             'epoch':        epoch,  
             'train_loss':   train_loss, 
@@ -456,6 +460,14 @@ class AutoencoderModel:
                 next_snapshot = (
                                             self.current_epoch // self.model_snapshot_frequency + 1) * self.model_snapshot_frequency
                 print("Next snapshot at epoch %s" % next_snapshot)
+
+            self.save_model_summary(os.path.join(self.model_snapshot_path, str(self.current_epoch)), 
+                self.summarize_model(os.path.join(self.model_snapshot_path, str(self.current_epoch)), 
+                    data=self.data, 
+                    autoencoder=self.autoencoder,
+                    encoder=self.encoder,
+                    decoder=self.decoder,
+                    epoch=self.current_epoch))
 
             print("Autosaving...")
             self.save(save_summary=False)
