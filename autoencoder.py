@@ -25,8 +25,6 @@ Usage:
   autoencoder.py repredict snapshot <snapshot> <count>
     [--use-dataset <dataset_path>]
     [--train-test-split <split_ratio>]
-  autoencoder.py generate <output> <count>
-    [--model <model_path>]
   autoencoder.py interpolate <key1> <key2> <interp>
     [--model <model_path>]
     [--use-dataset <dataset_path>]
@@ -136,14 +134,6 @@ def validate_and_split_data(dataset, train_test_split=0.75):
 
     return x_train, x_test
 
-class LossHistory(keras.callbacks.Callback):
-    def on_train_begin(self, logs={}):
-        self.losses = []
-
-    def on_batch_end(self, batch, logs={}):
-        self.losses.append((logs.get('loss'), logs.get('val-loss')))
-
-
 class AutoencoderModel:
     def __init__(
             self,
@@ -249,7 +239,7 @@ class AutoencoderModel:
         print("Can't load model from '%s', file does not exist" % path)
         return False
 
-    def save(self, path=None):
+    def save(self, path=None, save_summary=True):
         """ Saves keras model and other data to a directory, given by path.
 
         If path is not specified, defaults to self.autosave_path.
@@ -283,13 +273,14 @@ class AutoencoderModel:
             }))
 
         # Summarize model
-        self.save_model_summary(path, 
-            self.summarize_model(path, 
-                data=self.data, 
-                autoencoder=self.autoencoder,
-                encoder=self.encoder,
-                decoder=self.decoder,
-                epoch=self.current_epoch))        
+        if save_summary:
+            self.save_model_summary(path, 
+                self.summarize_model(path, 
+                    data=self.data, 
+                    autoencoder=self.autoencoder,
+                    encoder=self.encoder,
+                    decoder=self.decoder,
+                    epoch=self.current_epoch))        
 
     def summarize_model (self, model_path, data, autoencoder, encoder, decoder, epoch):
         print("summarizing '%s'"%model_path)
@@ -423,12 +414,8 @@ class AutoencoderModel:
 
         while epochs > 0:
             print("Training on epoch %s -> %s" % (self.current_epoch, self.current_epoch + self.autosave_frequency))
-
-            csv_logger = keras.callbacks.CSVLogger(os.path.join(self.autosave_path, 'log.csv'), separator=',', append=False)
-            result = self.autoencoder.fit(x_train, x_train, validation_data=(x_test, x_test), callbacks=[csv_logger],
+            self.autoencoder.fit(x_train, x_train, validation_data=(x_test, x_test),
                 epochs=self.autosave_frequency, batch_size=batch_size)
-            print(result)
-
             epochs -= self.autosave_frequency
             self.current_epoch += self.autosave_frequency
 
@@ -440,7 +427,7 @@ class AutoencoderModel:
                 print("Next snapshot at epoch %s" % next_snapshot)
 
             print("Autosaving...")
-            self.save()
+            self.save(save_summary=False)
             last_saved_epoch = self.current_epoch
 
         if last_saved_epoch != self.current_epoch:
@@ -455,18 +442,6 @@ class AutoencoderModel:
         # TODO: compare these using loss function
         y_train = self.autoencoder.predict(x_train)
         y_test = self.autoencoder.predict(x_test)
-
-    def generate(self, count, output_path):
-        print("generation TBD")
-
-        # TODO: generate using decoder.predict() from randomly (or fed in) latent vectors
-
-        # note: consider the arguments of this function and its CLI interface are temporary
-        # and prob subject to change. It may make sense to pass in a an array of latent
-        # parameters, for example (as a json file or something), and write back out parameters
-        # as json or to individual files in a directory. idk. we don't even necessarily need
-        # to do this step here though since we could just load a model snapshot in javascript
-        # land and generate data there
 
     def repredict(self, count, output_path):
         x_train, x_test = self.data
@@ -583,7 +558,7 @@ if __name__ == '__main__':
             num_epochs = parse_arg(int, '<num_epochs>', min_bound=1)
         elif args['test']:
             pass
-        elif args['generate'] or args['repredict']:
+        elif args['repredict']:
             output_path = args['<output>'] or 'repredicted'
             count = parse_arg(int, '<count>', min_bound=1)
             if args['snapshot']:
@@ -626,11 +601,6 @@ if __name__ == '__main__':
 
     elif args['test']:
         autoencoder.evaluate_using_test_data()
-
-    elif args['generate']:
-        autoencoder.generate(
-            count=count,
-            output_path=output_path)
 
     elif args['repredict']:
         autoencoder.repredict(
