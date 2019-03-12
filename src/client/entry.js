@@ -1,20 +1,21 @@
-import {PerspectiveCamera, Scene, Vector3, WebGLRenderer} from 'three';
-import MainScene from './main_scene';
+import {OrthographicCamera, Scene, Vector3, WebGLRenderer} from 'three';
+import OtherScene from "./other_scene";
 
 const renderer = new WebGLRenderer({antialias: true});
-const camera = new PerspectiveCamera();
+const camera = new OrthographicCamera();
 const scene = new Scene();
-const mainScene = new MainScene(camera, renderer);
+const mainScene = new OtherScene(camera, renderer);
 
 scene.add(mainScene);
 
 // camera
-camera.position.set(6, 3, -10);
+camera.position.set(-6, 3, 6);
 camera.lookAt(new Vector3(0, 0, 0));
 
 // renderer
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x7ec0ee, 1);
+renderer.setClearColor(0xffffff, 1);
+// renderer.setClearColor(0x7ec0ee, 1);
 
 // render loop
 const onAnimationFrameHandler = (timeStamp) => {
@@ -28,7 +29,8 @@ window.requestAnimationFrame(onAnimationFrameHandler);
 const windowResizeHandler = () => {
   const {innerHeight, innerWidth} = window;
   renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
+  renderer.setSize(innerHeight, innerHeight);
+  // camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
 };
 
