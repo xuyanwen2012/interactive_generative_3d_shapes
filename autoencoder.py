@@ -29,6 +29,10 @@ Usage:
     [--model <model_path>]
     [--use-dataset <dataset_path>]
     [--train-test-split <split_ratio>]
+  autoencoder.py gen-random <output> <count>
+    [--model <model_path>]
+    [--use-dataset <dataset_path>]
+    [--train-test-split <split_ratio>]
   autoencoder.py gen-latent-codes <output>
     [--model <model_path>]
     [--use-dataset <dataset_path>]
@@ -38,6 +42,14 @@ Usage:
     [--use-dataset <dataset_path>]
     [--train-test-split <split_ratio>]
   autoencoder.py interpolate <key1> <key2>
+    [--model <model_path>]
+    [--use-dataset <dataset_path>]
+    [--train-test-split <split_ratio>]
+  autoencoder.py add-features <key1> <key2>
+    [--model <model_path>]
+    [--use-dataset <dataset_path>]
+    [--train-test-split <split_ratio>]
+  autoencoder.py remix <original> <add> <subtract>
     [--model <model_path>]
     [--use-dataset <dataset_path>]
     [--train-test-split <split_ratio>]
@@ -572,6 +584,70 @@ class AutoencoderModel:
             with open(os.path.join(path, '%s.json'%(interp)), 'w') as f:
                 f.write(json.dumps([ float(value) for value in yinterp ]))
         subprocess.run([ 'node', 'index.js', 'reconstruct', path, path ])
+        for file in os.listdir(path):
+            if file.endswith('.json'):
+                os.remove(os.path.join(path, file))
+
+    def generate_add_features (self, key1, key2, interpolations):
+        x_train, x_test = self.data
+        idx1 = [ i for i, key in enumerate(self.keys) if key == key1 ]
+        idx2 = [ i for i, key in enumerate(self.keys) if key == key2 ]
+        enforce(len(idx1) > 0, "invalid key %s", key1); idx1 = idx1[0]
+        enforce(len(idx2) > 0, "invalid key %s", key2); idx2 = idx2[0]
+
+        x1 = x_train[idx1] if idx1 < x_train.shape[0] else x_test[idx1 - x_train.shape[0]]
+        x2 = x_train[idx2] if idx2 < x_train.shape[0] else x_test[idx2 - x_train.shape[0]]
+        print(x1.shape)
+        z1 = self.encoder.predict(np.array([ x1 ]))[0]
+        z2 = self.encoder.predict(np.array([ x2 ]))[0]
+
+        path = os.path.join('added_feature', '%s-%s'%(key1, key2))
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        print("writing to %s"%path)
+        for interp in interpolations:
+            zinterp = z1 + z2 * interp
+            yinterp = self.decoder.predict(np.array([ zinterp ]))[0]
+            with open(os.path.join(path, '%s.json'%(interp)), 'w') as f:
+                f.write(json.dumps([ float(value) for value in yinterp ]))
+        subprocess.run([ 'node', 'index.js', 'reconstruct', path, path ])
+        for file in os.listdir(path):
+            if file.endswith('.json'):
+                os.remove(os.path.join(path, file))
+
+    def generate_remix (self, origin_key, add_key, sub_key, interpolations):
+        key1, key2, key3 = origin_key, add_key, sub_key
+        x_train, x_test = self.data
+        idx1 = [ i for i, key in enumerate(self.keys) if key == key1 ]
+        idx2 = [ i for i, key in enumerate(self.keys) if key == key2 ]
+        idx3 = [ i for i, key in enumerate(self.keys) if key == key3 ]
+        enforce(len(idx1) > 0, "invalid key %s", key1); idx1 = idx1[0]
+        enforce(len(idx2) > 0, "invalid key %s", key2); idx2 = idx2[0]
+        enforce(len(idx3) > 0, "invalid key %s", key3); idx3 = idx3[0]
+
+        x1 = x_train[idx1] if idx1 < x_train.shape[0] else x_test[idx1 - x_train.shape[0]]
+        x2 = x_train[idx2] if idx2 < x_train.shape[0] else x_test[idx2 - x_train.shape[0]]
+        x3 = x_train[idx3] if idx3 < x_train.shape[0] else x_test[idx3 - x_train.shape[0]]
+        print(x1.shape)
+        z1 = self.encoder.predict(np.array([ x1 ]))[0]
+        z2 = self.encoder.predict(np.array([ x2 ]))[0]
+        z3 = self.encoder.predict(np.array([ x3 ]))[0]
+
+        path = os.path.join('interpolated', '%s-%s'%(key1, key2))
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        print("writing to %s"%path)
+        for interp in interpolations:
+            zinterp = z1 + z2 * (1 - interp) + z3 * interp 
+            yinterp = self.decoder.predict(np.array([ zinterp ]))[0]
+            with open(os.path.join(path, '%s.json'%(interp)), 'w') as f:
+                f.write(json.dumps([ float(value) for value in yinterp ]))
+        subprocess.run([ 'node', 'index.js', 'reconstruct', path, path ])
+        for file in os.listdir(path):
+            if file.endswith('.json'):
+                os.remove(os.path.join(path, file))
 
     def list_keys (self):
         x_train, x_test = self.data
@@ -585,6 +661,27 @@ class AutoencoderModel:
                 'TRAIN' if i < x_train.shape[0] else 'TEST',
                 key
             ))
+
+    def generate_random (self, output_path, count):
+        json_path = os.path.join(output_path, 'json')
+        if not os.path.exists(json_path):
+            os.makedirs(json_path)
+
+        print("generating...")
+        x_train, x_test = self.data
+        z_train = self.encoder.predict(x_train)
+        z_mean = np.mean(z_train)
+        z_stdev = np.var(z_train) ** 0.5
+        z_samples = np.random.normal(loc=z_mean, scale=z_stdev, size=(count, 10))
+        y_samples = self.decoder.predict(z_samples)
+        # print(z_samples.shape, y_samples.shape, y_samples[0].shape)
+
+        for i in range(count):
+            with open(os.path.join(json_path, '%s.json'%i), 'w') as f:
+                f.write(json.dumps(list(map(float, y_samples[i]))))
+        print("writing obj files...")
+        subprocess.run([ 'node', 'index.js', 'reconstruct', json_path, output_path, '--rebuild' ])
+        shutil.rmtree(json_path)
 
     def generate_latent_codes (self, model_path, output_path):
         pass
@@ -743,21 +840,30 @@ if __name__ == '__main__':
             num_epochs = parse_arg(int, '<num_epochs>', min_bound=1)
         elif args['test']:
             pass
-        elif args['repredict'] or args['gen-latent-codes'] or args['gen-latent-models']:
+        elif args['repredict'] or args['gen-latent-codes'] or args['gen-latent-models'] or args['gen-random']:
             output_path = args['<output>'] or 'repredicted'
-            if args['repredict']:
+            if args['repredict'] or args['gen-random']:
                 count = parse_arg(int, '<count>', min_bound=1)
                 if args['snapshot']:
                     snapshot_id = parse_arg(str, '<snapshot>')
                     model_path = os.path.join(model_path, 'snapshots', snapshot_id)
                     enforce_arg(os.path.exists(model_path), "no snapshot %s at %s", snapshot_id, model_path)
                     output_path = os.path.join(output_path, snapshot_id)
-        elif args['interpolate']:
+        elif args['interpolate'] or args['add-features']:
             key1 = parse_arg(str, '<key1>')
             key2 = parse_arg(str, '<key2>')
             interp = args['<interp>']
             if interp is not None:
                 interp = parse_arg(float, '<interp>', min_bound=0, max_bound=1)
+
+        elif args['remix']:
+            origin_key = parse_arg(str, '<original>')
+            add_key = parse_arg(str, '<add>')
+            sub_key = parse_arg(str, '<subtract>')
+            interp = args['<interp>']
+            if interp is not None:
+                interp = parse_arg(float, '<interp>', min_bound=0, max_bound=1)
+
         elif args['summarize-runs']:
             model_path = args['<model_path>']
             snapshot_path = os.path.join(model_path, 'snapshots')
@@ -810,6 +916,29 @@ if __name__ == '__main__':
         else:
             autoencoder.generate_interpolated(
                 key1=key1, key2=key2, interpolations=[ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.6, 0.8, 0.9, 1.0 ])
+
+    elif args['add-features']:
+        if interp is not None:
+            autoencoder.generate_add_features(
+                key1=key1, key2=key2, interpolations=[ interp ])
+        else:
+            autoencoder.generate_add_features(
+                key1=key1, key2=key2, interpolations=[ 
+                    -1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1,
+                    0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.6, 0.8, 0.9, 1.0 ])
+
+    elif args['remix']:
+        if interp is not None:
+            autoencoder.generate_remix(
+                origin_key=origin_key, add_key=add_key, sub_key=sub_key, interpolations=[ interp ])
+        else:
+            autoencoder.generate_remix(
+                origin_key=origin_key, add_key=add_key, sub_key=sub_key, interpolations=[ 
+                    -1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1,
+                    0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.6, 0.8, 0.9, 1.0 ])
+
+    elif args['gen-random']:
+        autoencoder.generate_random(output_path=output_path, count=count)
 
     elif args['list-keys']:
         autoencoder.list_keys()
