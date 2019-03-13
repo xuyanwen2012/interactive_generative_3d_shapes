@@ -76,7 +76,7 @@ import shutil
 import subprocess
 from docopt import docopt
 from keras.models import Sequential
-from keras.layers import Input, Dense, Dropout, Activation
+from keras.layers import Input, Dense, Dropout, Activation, LeakyReLU
 from keras.models import Model, load_model
 from keras.losses import mean_squared_error
 import keras
@@ -348,7 +348,12 @@ class AutoencoderModel:
             with open(summary_path, 'r') as f:
                 return json.loads(f.read())
 
-        summary = self.summarize_model(data=data, model_path=model_path, **self.load_model(model_path))
+        print("no snapshot for %s, rebuilding..."%model_path)
+        model = self.load_model(model_path)
+        if model is None:
+            print("couldn't load model from %s! aborting"%model)
+            return None
+        summary = self.summarize_model(data=data, model_path=model_path, **model)
         self.save_model_summary(model_path, summary)
         return summary
 
@@ -385,8 +390,14 @@ class AutoencoderModel:
         snapshot_path = os.path.join(model_path, 'snapshots')
         snapshots = list(os.listdir(snapshot_path))
         for i, snapshot in enumerate(snapshots):
+            if not snapshot.isnumeric():
+                continue
             path = os.path.join(snapshot_path, snapshot)
-            summaries.append(self.load_model_summary(path, rebuild))
+            summary = self.load_model_summary(path, rebuild)
+            if summary is None:
+                print("Failed to load '%s', skipping"%path)
+            else:
+                summaries.append(self.load_model_summary(path, rebuild))
             print("%s / %s"%(i+1, len(snapshots)))
         summaries.sort(key=lambda x: x['epoch'])
 
@@ -431,11 +442,14 @@ class AutoencoderModel:
         print("Building model")
         self.autoencoder = Sequential([
             Dense(self.hidden_layer_size, input_shape=(self.input_size,)),
-            Activation('relu'),
+            LeakyReLU(alpha=0.1),
+            Dropout(0.2),
             Dense(self.encoding_size),
-            Activation('relu'),
+            LeakyReLU(alpha=0.1),
+            Dropout(0.2),
             Dense(self.hidden_layer_size),
-            Activation('relu'),
+            LeakyReLU(alpha=0.1),
+            Dropout(0.2),
             Dense(self.input_size),
             Activation('linear')
         ])
@@ -450,22 +464,30 @@ class AutoencoderModel:
             self.save()
 
     def get_encoder_and_decoder(self, model):
-        enforce(len(model.layers) == 8,
-                "autoencoder model has changed, expected 8 layers but got %s:\n\t%s",
+        # model.summary()
+        enforce(len(model.layers) in (8, 11, 12),
+                "autoencoder model has changed, expected 8, 11, or 12 layers but got %s:\n\t%s",
                 len(model.layers),
                 '\n\t'.join(['%s: %s' % values for values in enumerate(model.layers)]))
+
+        if len(model.layers) == 8:
+            encoder_layers, decoder_layers = 4, 4
+        elif len(model.layers) == 11:
+            encoder_layers, decoder_layers = 6, 5
+        elif len(model.layers) == 12:
+            encoder_layers, decoder_layers = 6, 6
 
         print("encoder:")
         encoder_input = Input(shape=(self.input_size,))
         encoder = encoder_input
-        for layer in model.layers[0:4]:
+        for layer in model.layers[0:encoder_layers]:
             encoder = layer(encoder)
         encoder = Model(encoder_input, encoder)
 
         print("decoder:")
         decoder_input = Input(shape=(self.encoding_size,))
         decoder = decoder_input
-        for layer in model.layers[4:8]:
+        for layer in model.layers[encoder_layers:encoder_layers+decoder_layers]:
             decoder = layer(decoder)
         decoder = Model(decoder_input, decoder)
         return encoder, decoder
