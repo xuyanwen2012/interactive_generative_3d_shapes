@@ -2,69 +2,52 @@
 """run / test / train autoencoder.
 
 Usage:
-  autoencoder.py train <num_epochs>
-    [--model <model_path>]
+  autoencoder.py select <model-path>
+  autoencoder.py train [for|until] <num_epochs> [--step <step_count>]
+  autoencoder.py create <model-path>
     [--use-dataset <dataset_path>]
-    [--autosave <autosave_frequency>]
-    [--autosave-path <autosave_path>]
-    [--snapshot <snapshot_frequency>]
-    [--snapshot-path <snapshot_path>]
+    [--train-test-split <split_ratio>]
     [--batch-size <batch_size>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py summarize-runs <model_path>
+    [--use-model <python_model>]
+    [--snapshot-frequency <snapshot-frequency>]
+    [--summarize <summarize-frequency>]
+    [--genlatent <latent-generation-frequency>]
+    [--genrandom <random-generation-frequency>]
+    [--encoding-dim <encoding-dim>]
+    [--hidden-dim <hidden-dim>]
+    [--use-sigmoid]
+    [--use-tanh]
+    [--use-relu <relu_alpha>]
+    [--use-dropout <dropout>]
+  autoencoder.py configure
     [--use-dataset <dataset_path>]
     [--train-test-split <split_ratio>]
-  autoencoder.py test
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py repredict <output> <count>
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py repredict snapshot <snapshot> <count>
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py interpolate <key1> <key2> <interp>
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py gen-random <output> <count>
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py gen-latent-codes <output>
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py gen-latent-models <output>
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py interpolate <key1> <key2>
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py add-features <key1> <key2>
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py remix <original> <add> <subtract>
-    [--model <model_path>]
-    [--use-dataset <dataset_path>]
-    [--train-test-split <split_ratio>]
-  autoencoder.py list-keys
+    [--batch-size <batch_size>]
+    [--use-model <python-model>]
+    [--snapshot-frequency <snapshot-frequency>]
+    [--summarize <summarize-frequency>]
+    [--genlatent <latent-generation-frequency>]
+    [--genrandom <random-generation-frequency>]
+  autoencoder.py print-summary
+  autoencoder.py list-keys [<count>]
+  autoencoder.py repredict <count> [--snapshot <snapshot>]
+  autoencoder.py gen-random <count> [--snapshot <snapshot>]
+  autoencoder.py gen-latent <count> [--snapshot <snapshot>]
+  autoencoder.py interpolate model <key1> to <key2> [by <interp>|count <count>] [--snapshot <snapshot>]
+  autoencoder.py remix model <key1> [add <add-key>] [sub <sub-key>] [by <interp>|count <count>] [--snapshot <snapshot>]
 
 Options:
-  -h --help                         show this screen
-  --use-dataset <dataset_path>      use a specific dataset (should be a URL)
-  --model <model_path>              select model path to load from  [default: model]
-  --autosave <autosave_frequency>   set autosave frequency          [default: 10]
-  --autosave-path <autosave_path>   set autosave path               [default: model]
-  --snapshot <snapshot_frequency>   set snapshot frequency          [default: 50]
-  --snapshot-path <snapshot_path>   set snapshot path               [default: model/snapshots]
-  --batch-size <batch_size>         set training batch size         [default: 32]
-  --train-test-split <split_ratio>  set train / test split ratio    [default: 0.8]
+  -h --help                                     show this screen
+  --use-model <python_model>                    use a specific autoencoder model to use (in models/*.py)
+  --use-dataset <dataset_path>                  use a specific dataset (should be a URL)
+  --train-test-split <split_ratio>              set train / test split ratio    [default: 0.8]
+  --snapshot-frequency <snapshot_frequency>     set interval that model snapshots are written to disk (is limited by <step_count> [default: 50]
+  --summarize <summarize_frequency>             set interval that model summaries are written to disk (is limited by <step_count>) [default: 1]
+  --genlatent <latent-generation-frequency>     set interval that latent shapes are generated and written to disk [default: 0]
+  --genrandom <random-generation-frequency>     set interval that random models are generated and written to disk [default: 0]
+  --batch-size <batch_size>                     set training batch size         [default: 32]
+  --encoding-dim <encoding-dim>                 set size of encoding dimension (can only be set at model creation) [default: 10]
+  --hidden-dim <hidden-dim>                     set size of hidden layer (can only be set at model creation) [default: 1000]
 """
 from urllib.request import urlopen
 import pickle as pkl
@@ -75,11 +58,30 @@ import os
 import shutil
 import subprocess
 from docopt import docopt
-from keras.models import Sequential
-from keras.layers import Input, Dense, Dropout, Activation, LeakyReLU
-from keras.models import Model, load_model
-from keras.losses import mean_squared_error
-import keras
+
+# from keras.losses import mean_squared_error
+# import keras
+
+
+# Default arguments
+DEFAULT_DATASET = 'https://raw.githubusercontent.com/SeijiEmery/shape-net-data/master/datasets/training-lv5.pkl'
+DEFAULT_MODEL   = 'naive-autoencoder'
+DEFAULT_ENCODING_DIM = 10
+DEFAULT_HIDDEN_DIM = 100
+DEFAULT_LAYER_ACTIVATION = 'relu'
+DEFAULT_RELU_ALPHA = 0.1
+DEFAULT_DROPOUT = 0.2
+DEFAULT_LOSS_FUNCTION = 'mean_squared_error'
+DEFAULT_OPTIMIZER = 'adam'
+
+DEFAULT_BATCH_SIZE = 50
+DEFAULT_TRAIN_TEST_SPLIT = 0.8
+DEFAULT_SNAPSHOT_SAVE_FREQUENCY = 50
+DEFAULT_SUMMARY_SAVE_FREQUENCY  = 1
+DEFAULT_RANDOM_MODEL_SAVE_FREQUENCY = 10
+DEFAULT_LATENT_SHAPE_SAVE_FREQUENCY = 0
+DEFAULT_RANDOM_MODEL_COUNT = 10
+DEFAULT_LATENT_SHAPE_COUNT = 10
 
 """ Helper functions """
 
@@ -154,6 +156,67 @@ def validate_and_split_data(dataset, train_test_split=0.75):
         data.shape, x_train.shape, x_test.shape, train_test_split))
 
     return x_train, x_test
+
+def build_model(config):
+    from keras.models import Sequential
+    from keras.layers import Input, Dense, Dropout, Activation, LeakyReLU
+    from keras.models import Model, load_model
+
+    activation_layer = { 'activation': config['layer_activation'] }
+    terminal_layer   = { 'activation': 'linear' }
+
+    if config['layer_activation'] == 'relu' and config['relu_alpha'] > 0.0:
+        activation_layer['layer_activation']
+    if config['dropout'] > 0.0:
+        activation_layer['dropout'] = config['dropout']
+
+    encoder_layers, decoder_layers = [ 
+        (config['input_dim'],), activation_layer, 
+        (config['hidden_dim'],), activation_layer, 
+        (config['encoding_dim'],), activation_layer,
+    ], [
+        (config['encoding_dim'],), activation_layer,
+        (config['hidden_dim'],), activation_layer,
+        (config['input_dim'],), terminal_layer
+    ]
+    config['layers'] = encoder_layers + decoder_layers[2:]
+    encoder_input, encoder_layers = encoder_layers[0], encoder_layers[2:]
+    decoder_input, decoder_layers = decoder_layers[0], decoder_layers[2:]
+
+    first_layer = True
+    keras_layers = []
+    def write_layers (layers):
+        nonlocal first_layer, keras_layers
+        initial_layer_count = len(keras_layers)
+        for layer in encoder_layers:
+            if type(layer) == tuple:
+                if first_layer:
+                    first_layer = False
+                    keras_layers.append(Dense(layer, input_size=encoder_input))
+                else:
+                    keras_layers.append(Dense(layer))
+
+            elif type(layer) == dict and 'activation' in layer:
+                if layer['activation'] == 'relu' and 'alpha' in layer:
+                    keras_layers.append(LeakyReLU(alpha=layer['alpha']))
+                else:
+                    keras_layers.append(Activation(layer['activation']))
+                
+                if 'dropout' in layer:
+                    keras_layers.append(Dropout(layer['dropout']))
+            else:
+                enforce(False, "unknown layer %s %s", type(layer), layer)
+        return len(keras_layers) - initial_layer_count
+
+    print("building model...")
+    config['num_encoding_layers'] = write_layers(encoder_layers)
+    config['num_encoding_layers'] = write_layers(decoder_layers)
+    model = Sequential(keras_layers)
+    model.compile(optimizer=config['optimizer'], loss=config['loss_function'])
+
+    print("Built autoencoder:")
+    model.summary()
+    return model
 
 class AutoencoderModel:
     def __init__(
@@ -430,38 +493,6 @@ class AutoencoderModel:
         print("saving '%s'"%path)
         with open(path, 'w') as f:
             f.write(csv_data)
-
-    def build(self):
-        """ Builds a new model.
-
-        Called automatically by Model's constructor iff autoload path set but there are no files to load from.
-        Otherwise, you could disable autoload and call this explicitely to construct a new model.
-
-        Additionally, if self.autosave_path is set this will autosave after constructing the model.
-        """
-        print("Building model")
-        self.autoencoder = Sequential([
-            Dense(self.hidden_layer_size, input_shape=(self.input_size,)),
-            LeakyReLU(alpha=0.1),
-            Dropout(0.2),
-            Dense(self.encoding_size),
-            LeakyReLU(alpha=0.1),
-            Dropout(0.2),
-            Dense(self.hidden_layer_size),
-            LeakyReLU(alpha=0.1),
-            Dropout(0.2),
-            Dense(self.input_size),
-            Activation('linear')
-        ])
-        print("compiling...")
-        self.autoencoder.compile(optimizer='adam', loss='mean_squared_error')
-
-        print("Built autoencoder:")
-        self.autoencoder.summary()
-        self.encoder, self.decoder = self.get_encoder_and_decoder(self.autoencoder)
-
-        if self.autosave_path:
-            self.save()
 
     def get_encoder_and_decoder(self, model):
         # model.summary()
@@ -820,13 +851,13 @@ class AutoencoderModel:
             shutil.rmtree(json_files)
 
 
-DEFAULT_DATASET = 'https://raw.githubusercontent.com/SeijiEmery/shape-net-data/master/datasets/training-lv5.pkl'
-
-
 class ArgumentParsingException(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+class InitializationException(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 if __name__ == '__main__':
     args = docopt(__doc__)
@@ -834,8 +865,7 @@ if __name__ == '__main__':
 
     """ Validate arguments """
     enforce_arg = lambda cond, fmt, *args: enforce(cond, fmt, *args, exception=ArgumentParsingException)
-
-
+    enforce_init = lambda cond, fmt, *args: enforce(cond, fmt, *args, exception=InitializationException)
     def parse_arg(T, key, min_bound=None, max_bound=None):
         try:
             value = T(args[key])
@@ -847,52 +877,239 @@ if __name__ == '__main__':
         except ValueError:
             enforce_arg(False, "%s should be %s, got '%s'", key, str(T), args[key])
 
+    # Validate args in try / except block so we can use and catch enforcements
     try:
-        data_url = args['--use-dataset'] or DEFAULT_DATASET
-        model_path = args['--model']
-        autosave_path = args['--autosave-path']
-        autosave_freq = parse_arg(int, '--autosave', min_bound=0)
-        snapshot_path = args['--snapshot-path']
-        snapshot_freq = parse_arg(int, '--snapshot', min_bound=0)
-        batch_size = parse_arg(int, '--batch-size', min_bound=1)
-        train_test_split = parse_arg(float, '--train-test-split', min_bound=0.0, max_bound=1.0)
-        # enforce_arg(os.path.exists(model_path), "model_path '%s' does not exist", model_path)
+        # Load / select model path
+        local_config_path = '.model_selection.json'
+        if args['select']:
+            model_path = args['<model-path>']
+            enforce_arg(os.path.exists(model_path), 
+                "Invalid model path, %s does not exist", model_path)
+            enforce_arg(os.path.exists(model_config_path), 
+                "Invalid model path, %s is missing a model_config.json file", model_config_path)
 
-        if args['train']:
-            num_epochs = parse_arg(int, '<num_epochs>', min_bound=1)
-        elif args['test']:
-            pass
-        elif args['repredict'] or args['gen-latent-codes'] or args['gen-latent-models'] or args['gen-random']:
-            output_path = args['<output>'] or 'repredicted'
-            if args['repredict'] or args['gen-random']:
+            print("setting model selection to use %s"%model_path)
+            with open(local_config_path, 'w') as f:
+                f.write(json.dumps({ 'model_path': model_path }))
+            sys.exit(0)
+
+        elif args['create']:
+            model_path = args['<model-path>']
+            enforce_arg(not os.path.exists(model_path),
+                "Cannot create model, %s already exists", model_path)
+        else:
+            enforce_init(os.path.exists(local_config_path), 
+                "no model selected, run ./autoencoder.py select or ./autoencoder.py create")
+            try:
+                with open(local_config_path, 'r') as f:
+                    model_path = json.loads(f.read())['model_path']
+            except json.decoder.JSONDecodeError:
+                print("initialization file is corrupted, please re-run ./autoencoder.py select")
+                sys.exit(-1)
+            except KeyError:
+                print("initialization file is corrupted, please re-run ./autoencoder.py select")
+                sys.exit(-1)
+
+        # Load / create and validate model config
+        model_config_path = os.path.join(model_path, 'model_config.json')
+        REQUIRED_CONFIG_KEYS = set([
+            'model_snapshot_path', 'current_epoch', 'model_type',
+            'dataset_path', 'train_test_split', 'input_dim', 'hidden_dim', 'encoding_dim', 
+            'layer_activation', 'dropout', 'relu_alpha', 'optimizer', 'loss_function',
+            'layers', 'num_encoding_layers', 'num_decoding_layers',
+            'save_snapshot_frequency',
+            'save_summary_frequency',
+            'save_latent_shape_frequency', 'save_latent_shape_count',
+            'save_random_model_frequency', 'save_random_model_count',
+        ])
+        VALID_MODEL_TYPES = set([ 'naive-autoencoder' ])
+        VALID_LOSS_FUNCTIONS = set([ 'mean-squared-error' ])
+        VALID_OPTIMIZERS = set([ 'adam' ])
+        VALID_ACTIVATION_FUNCTIONS = set([ 'relu', 'tanh', 'sigmoid' ])
+        def validate_config (config, context_msg, allow_missing_snapshot_path=False):
+            config_keys = set(config.keys())
+            if config_keys != REQUIRED_CONFIG_KEYS:
+                missing_keys = REQUIRED_CONFIG_KEYS - config_keys
+                extra_keys   = config_keys - REQUIRED_CONFIG_KEYS
+                enforce_init(len(missing_keys) == 0, "model config %s is missing keys %s!", context_msg, missing_keys)
+                enforce_init(len(extra_keys) == 0, "model config %s has extra keys %s!", context_msg, extra_keys)
+
+            def enforce_param (key, expected_type, any_of=None, min_bound=None, max_bound=None, path_should_exist=False, expected_length=None):
+                value = config[key]
+                enforce_init(type(value) == expected_type,
+                    "model config %s: invalid type for %s: expected %s, not %s",
+                    context_msg, key, expected_type, type(value))
+
+                if min_bound is not None:
+                    enforce_init(value >= min_bound,
+                        "model config %s: %s is out of range: %s < %s",
+                        context_msg, key, value, min_bound)
+
+                if max_bound is not None:
+                    enforce_init(value <= max_bound,
+                        "model config %s: %s is out of range: %s > %s",
+                        context_msg, key, value, max_bound)
+
+                if any_of is not None:
+                    enforce_init(value in any_of,
+                        "model config %s: %s has invalid value %s, should be in %s",
+                        context_msg, key, value, any_of)
+
+                if expected_length is not None:
+                    enforce_init(len(value) == expected_length,
+                        "model config %s: expected length of %s to be %s, got %s",
+                        context_msg, key, expected_length, value)
+
+                if path_should_exist:
+                    enforce_init(os.path.exists(value),
+                        "model config %s: %s path '%s' does not exist!",
+                        context_msg, key, value)
+
+            if not allow_missing_snapshot_path:
+                enforce_param('model_snapshot_path', str, path_should_exist=True)
+
+            enforce_param('current_epoch', int, min_bound=0)
+            enforce_param('model_type', str, any_of=MODEL_TYPES)
+            enforce_param('dataset_path', str, path_should_exist=False)
+            enforce_param('train_test_split', float, min_bound=0.0, max_bound=1.0)
+            enforce_param('input_dim', int, min_bound=1)
+            enforce_param('hidden_dim', int, min_bound=0)
+            enforce_param('encoding_dim', int, min_bound=1)
+            enforce_param('layer_activation', str, any_of=VALID_ACTIVATION_FUNCTIONS)
+            enforce_param('dropout', float, min_bound=0.0, max_bound=1.0)
+            enforce_param('relu_alpha', float, min_bound=0.0, max_bound=1.0)
+            enforce_param('num_encoding_layers', int, min_bound=4)
+            enforce_param('num_decoding_layers', int, min_bound=4)
+            enforce_param('optimizer', str, any_of=VALID_OPTIMIZERS)
+            enforce_param('loss_function', str, any_of=VALID_LOSS_FUNCTIONS)
+            enforce_param('layers', list, expected_length=config['num_encoding_layers'] + config['num_decoding_layers'])
+            enforce_param('save_snapshot_frequency', int, min_bound=0)
+            enforce_param('save_summary_frequency', int, min_bound=0)
+            enforce_param('save_latent_shape_frequency', int, min_bound=0)
+            enforce_param('save_latent_shape_count', int, min_bound=1)
+            enforce_param('save_random_model_frequency', int, min_bound=0)
+            enforce_param('save_random_model_count', int, min_bound=1)
+
+        if args['create']:
+            config = {}
+        else:
+            enforce_init(os.path.exists(model_config_path), 
+                "cannot load %s, missing model_config.json file! please run ./autoencoder.py select or repair manually",
+                model_config_path)
+            try:
+                with open(model_config_path, 'r') as f:
+                    config = json.loads(f.read())
+            except json.decoder.JSONDecodeError:
+                print("model config %s is corrupted"%model_config_path)
+                sys.exit(-1)
+            validate_config(config, "(loaded from %s)"%model_config_path)
+
+        def maybe_set_config_value (key, type_, arg, default_value, **kwargs):
+            if arg and args[arg] is not None:
+                config[key] = parse_arg(type_, arg, **kwargs)
+                return True
+            elif args['create']:
+                config[key] = default_value
+                return True
+            return False
+
+        # load / verify dataset + train / test params
+        if args['create'] or args['configure']:
+            set_data = maybe_set_config_value('dataset_path', str, '--use-dataset', DEFAULT_DATASET)
+            set_tts = maybe_set_config_value('train_test_split', float, '--train-test-split', DEFAULT_TRAIN_TEST_SPLIT, min_bound=0.0, max_bound=1.0)
+            if set_data or set_tts:
+                print("attempting to load dataset %s"%config['dataset_path'])
+                dataset = load_dataset(config['dataset_path'])
+                x_train, x_test = validate_and_split_data(dataset, config['train_test_split'])
+
+                # get size of input dimension from the dataset (and verify that this is valid / matches train / test)
+                config['input_dim'] = dataset['data'].shape[1]
+                enforce(config['input_dim'] == x_train.shape[1] and config['input_dim'] == x_test.shape[1],
+                    "data dimension does not match train + test ?! %s %s != %s, %s",
+                    config['input_dim'], x_train.shape[1], x_test.shape[1])
+
+            # load other parameters
+            maybe_set_config_value('batch_size', int, '--batch-size', DEFAULT_BATCH_SIZE, min_bound=1)
+            maybe_set_config_value('save_snapshot_frequency', int, '--snapshot-frequency', DEFAULT_SNAPSHOT_SAVE_FREQUENCY, min_bound=0)
+            maybe_set_config_value('save_summary_frequency', int, '--summarize', DEFAULT_SUMMARY_SAVE_FREQUENCY, min_bound=0)
+            maybe_set_config_value('save_latent_shape_frequency', int, '--genlatent', DEFAULT_LATENT_SHAPE_SAVE_FREQUENCY, min_bound=0)
+            maybe_set_config_value('save_random_model_frequency', int, '--genrandom', DEFAULT_RANDOM_MODEL_SAVE_FREQUENCY, min_bound=0)
+            maybe_set_config_value('save_latent_shape_count', int, None, DEFAULT_LATENT_SHAPE_COUNT)
+            maybe_set_config_value('save_random_model_count', int, None, DEFAULT_RANDOM_MODEL_COUNT)
+
+        # configure model parameters (can be set only at model creation)
+        if args['create']:
+            config['current_epoch'] = 0
+            config['model_snapshot_path'] = os.path.join(model_path, 'snapshots', '0', 'model.h5')
+            maybe_set_config_value('model_type', str, '--use-model', DEFAULT_MODEL)
+            maybe_set_config_value('hidden_dim', int, '--encoding-dim', DEFAULT_HIDDEN_DIM)
+            maybe_set_config_value('encoding_dim', int, '--encoding-dim', DEFAULT_ENCODING_DIM)
+            maybe_set_config_value('loss_function', str, None, DEFAULT_LOSS_FUNCTION)
+            maybe_set_config_value('optimizer', str, None, DEFAULT_OPTIMIZER)
+            activation_args = { 
+                k: args[k] for k in ['--use-sigmoid', '--use-tanh', '--use-relu'] 
+                if args[k]
+            }
+            enforce_arg(len(activation_args) <= 1, 
+                "cannot use multiple activation args: %s", 
+                ', '.join(activation_args.keys()))
+            
+            if args['--use-sigmoid']:
+                config['layer_activation'] = 'sigmoid'
+            elif args['--use-tanh']:
+                config['layer_activation'] = 'tanh'
+            elif args['--use-relu']:
+                config['layer_activation'] = 'relu'
+                maybe_set_config_value('relu_alpha', float, '<relu_alpha>', DEFAULT_RELU_ALPHA, min_bound=0.0, max_bound=1.0)
+            else:
+                config['layer_activation'] = DEFAULT_LAYER_ACTIVATION
+                config['relu_alpha'] = DEFAULT_RELU_ALPHA
+
+            if args['--use-dropout']:
+                config['dropout'] = parse_arg(float, '<dropout>', min_bound=0.0, max_bound=1.0)
+            else:
+                config['dropout'] = DEFAULT_DROPOUT
+
+        # validate and maybe save configuration
+        if args['create'] or args['configure']:
+            if args['create']:
+                model = build_model(config)
+                validate_config(config, "(new config)", allow_missing_snapshot_path=True)
+
+                print("saving model to %s"%config['model_snapshot_path'])
+                model.save(config['model_snapshot_path'])
+            else:
+                validate_config(config, "(config loaded from %s)"%model_config_path)
+
+            print("saving %s"%model_config_path)
+            with open(model_config_path, 'w') as f:
+                f.write(json.dumps(config))
+            print("successfully saved config %s"%model_config_path)
+            sys.exit(0)
+
+
+        if args['list-keys'] or args['repredict'] or args['gen-random'] or args['gen-latent'] or args['interpolate'] or args['remix']:
+            if args['<count>'] is not None:
                 count = parse_arg(int, '<count>', min_bound=1)
-                if args['snapshot']:
-                    snapshot_id = parse_arg(str, '<snapshot>')
-                    model_path = os.path.join(model_path, 'snapshots', snapshot_id)
-                    enforce_arg(os.path.exists(model_path), "no snapshot %s at %s", snapshot_id, model_path)
-                    output_path = os.path.join(output_path, snapshot_id)
-        elif args['interpolate'] or args['add-features']:
-            key1 = parse_arg(str, '<key1>')
-            key2 = parse_arg(str, '<key2>')
-            interp = args['<interp>']
-            if interp is not None:
-                interp = parse_arg(float, '<interp>', min_bound=0, max_bound=1)
-
-        elif args['remix']:
-            origin_key = parse_arg(str, '<original>')
-            add_key = parse_arg(str, '<add>')
-            sub_key = parse_arg(str, '<subtract>')
-            interp = args['<interp>']
-            if interp is not None:
-                interp = parse_arg(float, '<interp>', min_bound=0, max_bound=1)
-
-        elif args['summarize-runs']:
-            model_path = args['<model_path>']
-            snapshot_path = os.path.join(model_path, 'snapshots')
+            else:
+                count = 10
+            snapshot = args['<snapshot>']
+            key1 = args['<key1>']
+            key2 = args['<key2>']
+            add_key = args['<add-key>']
+            if args['by']:
+                interp = parse_arg(float, '<interp>', min_bound=0.0, max_bound=1.0)
 
     except ArgumentParsingException as e:
         print("Invalid argument: %s" % e)
         sys.exit(-1)
+
+    except InitializationException as e:
+        print("%s"%e)
+        sys.exit(-1)
+
+
+
 
     """ Run everything """
     dataset = load_dataset(data_url)
