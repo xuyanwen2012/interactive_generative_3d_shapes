@@ -9,12 +9,195 @@ import numpy as np
 import json
 import os
 
+class CubeMesh:
+    def __init__ (self, corner_vertices):
+        enforce(corner_vertices.shape == (8, 3), 
+            "invalid vertex shape: expected (8, 3), got %s",
+            corner_vertices.shape)
+
+        self.verts = corner_vertices
+
+        # planes on [0 .. 6), corresponds to axis directions
+        #    [ -x, +x, -y, +y, -z, +z ]
+        #
+        # conceptually, plane = axis + direction.
+        # numerically, indices can be related as follows:
+        #   axis on [0 .. 3), axis = plane / 2    (x, y, z)
+        #   dir  on [0 .. 1), dir  = plane % 2    (-1, +1)
+        #
+        # how does this map to vertices? 
+        #   the vertices for a given plane are: all x / y / z values on [-1, +1],
+        #   where the plane's axis = that direction
+        #
+        # so the +x plane is given by the 4 vertices
+        #    (+x, -y, -z), (+x, +y, -z), (+x, -y, +z), (+x, +y, +z)
+        # with x, y, z = 1, 1, 1
+        #
+        # assuming that vertices are given by the indices [0 .. 8), ie
+        #   000, 001, 010, 011, 100, 101, 110, 111
+        #
+
+        def gen_planar_vertex_coords (plane):
+            coords = [ -1.0, 1.0 ]
+            axis, direction = plane // 2, plane % 2
+            i_axis, j_axis = (axis + 1) % 3, (axis + 2) % 3
+            for i in range(2):
+                for j in range(2):
+                    vertex = [0, 0, 0]
+                    vertex[axis] = coords[direction]
+                    vertex[i_axis] = coords[i]
+                    vertex[j_axis] = coords[j]
+                    yield vertex
+
+        def graycode (n):
+            enforce(n == 8, "graycode tbd, for now just hardcoded. %s != 8", n)
+            return [
+                0b000,
+                0b001,
+                0b010,
+                0b011,
+                0b010,
+                0b110,
+                0b111,
+                0b101,
+                0b100,
+            ]
+
+        def gen_verts ():
+            coords = [ -1.0, 1.0 ]
+            return [
+                [ coords[i & 1], coords[(i >> 1) & 1], coords[(i >> 2) & 1] ]
+                for i in graycode(8)
+            ]
+
+        def gen_planar_vertex_indices (plane):
+            axis, direction = plane // 2, plane % 2
+            if axis == 0:
+                i_axis, j_axis = (axis + 1), (axis + 2)
+            elif axis == 1:
+                i_axis, j_axis = (axis - 1), (axis + 2)
+            elif axis == 2:
+                i_axis, j_axis = (axis - 2), (axis - 1)
+
+            # i_axis, j_axis = (axis + 1) % 3, (axis + 2) % 3
+            for i in range(2):
+                for j in range(2):
+                    yield (direction << axis) | (i << i_axis) | (j << j_axis)
+
+        def gen_planar_normals (plane):
+            direction_values = [ -1.0, 1.0 ]
+            axis, direction = plane // 2, plane % 2
+            vertex = [ 0, 0, 0 ]
+            vertex[axis] = direction_values[direction]
+            return vertex
+
+        print("Cube Vertices:")
+        for plane in range(6):
+            print("\t%s"%list(gen_planar_vertex_coords(plane)))
+
+        print("Cube Vertex coords:")
+        for plane in range(6):
+            print("\t%s"%list(gen_planar_vertex_indices(plane)))
+
+        self.quad_verts = np.array(gen_verts())
+        self.quad_faces = np.array(list(map(list, map(gen_planar_vertex_indices, range(6)))))
+        # self.quad_verts = np.array(list(map(list, map(gen_planar_vertex_coords, range(6))))).reshape(12, 3)
+        self.quad_normals = np.array(list(map(list, map(gen_planar_normals, range(6)))))
+        print(self.quad_faces.shape, self.quad_faces)
+        print(self.quad_verts.shape, self.quad_verts)
+        print(self.quad_normals.shape, self.quad_normals)
+        # self.faces = np.array([
+        #     [1, 0, 2],
+        #     [3, 1, 2],
+        #     [0, 4, 6],
+        #     [2, 0, 6],
+        #     [4, 5, 7],
+        #     [6, 4, 7],
+        #     [5, 1, 3],
+        #     [7, 5, 3],
+        #     [3, 2, 6],
+        #     [7, 3, 6],
+        #     [5, 4, 0],
+        #     [1, 5, 0],
+        # ])
+        self.vertex_normals = np.array([
+            [-1, -1, -1],
+            [1, -1, -1],
+            [-1, 1, -1],
+            [1, 1, -1],
+            [-1, -1, 1],
+            [1, -1, 1],
+            [-1, 1, 1],
+            [1, 1, 1],
+        ])
+        print(self.verts.shape)
+        # print(self.faces.shape)
+        print(self.vertex_normals.shape)
+
+    def __str__ (self):
+        def stringify (fmt, array):
+            try:
+                return [ fmt%tuple(array[i]) for i in range(array.shape[0]) ]
+            except TypeError:
+                print("Failed to stringify with fmt '%s', values with shape %s, first element shape = %s, values = %s"%(
+                    fmt, array.shape, array[0].shape, array[0]
+                ))
+            return []
+
+        obj_lines = stringify('v %f %f %f', self.quad_verts)
+        # obj_lines += stringify('vn %f %f %f', self.quad_normals)
+        obj_lines += stringify('f %d// %d// %d// %d//', self.quad_faces)
+        return '\n'.join(obj_lines)
+
+        # obj_lines += [ 'v %f %f %f'%tuple(self.quad_verts[i]) for i in range(self.verts) ]
+        # self.generate_triangle_faces()
+        # obj_lines =  [ 'v %f %f %f'%tuple(self.verts[i]) for i in range(self.verts.shape[0]) ]
+        # obj_lines += [ 'vn %f %f %f'%tuple(self.vertex_normals[i]) for i in range(self.vertex_normals.shape[0]) ]
+        # obj_lines += [ 'f %d// %d// %d//'%tuple(self.faces[i]) for i in range(self.faces.shape[0]) ]
+        return '\n'.join(obj_lines)
+
+    def generate_triangle_faces (self):
+        faces = []
+        for i in range(self.quad_faces.shape[0]):
+            a, b, c, d = self.quad_faces[i]
+            faces.append([ a, b, c ])
+            # faces.append([ c, d, a ]) 
+        self.faces = np.array(faces)
+
+    def subdivide (self, vertex_offsets):
+        new_faces, new_normals = [], []
+        for i in range(self.quad_faces.shape[0]):
+            a, b, c, d = self.quad_faces[i]
+
+            center_vertex = (self.quad_verts[a] + self.quad_verts[b] + self.quad_verts[c] + self.quad_verts[d]) / 4
+            vertex_offset = self.quad_normals[i] * vertex_offsets[i]
+
+            k = len(self.quad_verts)
+            self.quad_verts.append(center_vertex + vertex_offset)
+
+            
+
+
+
+        self.quad_verts, self.quad_normals = new_faces, new_normals
+
+
+
+
+
+
+    # def subdivide_reconstruct (self, vertex_offsets)
+
+    def subdivide_reconstruct (self, vertex_offsets):
+        pass
+
 def reconstruct_mesh (data):
     print(data.shape)
     enforce(type(data) == np.ndarray, "expected a numpy array, not %s", type(data))
     enforce(len(data.shape) == 1, "expected a 1d array, not shape %s"%(data.shape,))
-    print(data)
-    return "fubar"
+    cube_mesh = CubeMesh(data[:8 * 3].reshape(8, 3))
+    print(cube_mesh)
+    return str(cube_mesh)
 
 def write_file (result, output_file):
     basedir, file = os.path.split(output_file)
