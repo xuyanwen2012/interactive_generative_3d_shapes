@@ -64,11 +64,52 @@ class CubeMesh:
             ]
 
         def gen_verts ():
-            coords = [ -1.0, 1.0 ]
-            return [
-                [ coords[i & 1], coords[(i >> 1) & 1], coords[(i >> 2) & 1] ]
-                for i in graycode(8)
-            ]
+            def gen_coords ():
+                for i in range(8):
+                    bit = 1
+                    while (bit & 7) != 0:
+                        yield +1.0 if i & bit else -1.0
+                        bit <<= 1
+            return np.array(list(gen_coords())).reshape((8, 3))
+
+        def gen_edges ():
+            def gen_edge_pairs ():
+                n = 8
+                for i in range(8):
+                    bit = 1
+                    while (bit & 7):
+                        if i & bit == 0:
+                            yield i, i | bit
+                        bit <<= 1
+            return np.array(list(gen_edge_pairs())).reshape((12, 2))
+
+        edges = gen_edges()
+        print(edges.shape)
+        print(edges)
+
+        face_indices = [[] for i in range(6) ]
+        for a, b in edges:
+            for axis in range(3):
+                if (a & (1 << axis)) == (b & (1 << axis)):
+                    plane = axis * 2 + ((a >> axis) & 1)
+                    if a not in face_indices[plane]:
+                        face_indices[plane].append(a)
+                    if b not in face_indices[plane]:
+                        face_indices[plane].append(b)
+
+        face_indices = np.array(face_indices)
+        for i in range(face_indices.shape[0]):
+            face_indices[i][3], face_indices[i][2] = face_indices[i][2], face_indices[i][3]
+
+        print(face_indices.shape)
+        print(face_indices)
+
+        # def gen_verts ():
+        #     coords = [ -1.0, 1.0 ]
+        #     return [
+        #         [ coords[i & 1], coords[(i >> 1) & 1], coords[(i >> 2) & 1] ]
+        #         for i in graycode(8)
+        #     ]
 
         def gen_planar_vertex_indices (plane):
             axis, direction = plane // 2, plane % 2
@@ -100,26 +141,21 @@ class CubeMesh:
             print("\t%s"%list(gen_planar_vertex_indices(plane)))
 
         self.quad_verts = np.array(gen_verts())
-        self.quad_faces = np.array(list(map(list, map(gen_planar_vertex_indices, range(6)))))
+        self.quad_faces = face_indices
+        # self.quad_faces = np.array(list(map(list, map(gen_planar_vertex_indices, range(6)))))
         # self.quad_verts = np.array(list(map(list, map(gen_planar_vertex_coords, range(6))))).reshape(12, 3)
+        self.quad_faces = np.array([
+            [0, 4, 6, 2],
+            [1, 3, 7, 5],
+            [0, 1, 5, 4],
+            [6, 7, 3, 2],
+            [2, 3, 1, 0],
+            [4, 5, 7, 6],
+        ])
         self.quad_normals = np.array(list(map(list, map(gen_planar_normals, range(6)))))
         print(self.quad_faces.shape, self.quad_faces)
         print(self.quad_verts.shape, self.quad_verts)
         print(self.quad_normals.shape, self.quad_normals)
-        # self.faces = np.array([
-        #     [1, 0, 2],
-        #     [3, 1, 2],
-        #     [0, 4, 6],
-        #     [2, 0, 6],
-        #     [4, 5, 7],
-        #     [6, 4, 7],
-        #     [5, 1, 3],
-        #     [7, 5, 3],
-        #     [3, 2, 6],
-        #     [7, 3, 6],
-        #     [5, 4, 0],
-        #     [1, 5, 0],
-        # ])
         self.vertex_normals = np.array([
             [-1, -1, -1],
             [1, -1, -1],
@@ -135,18 +171,18 @@ class CubeMesh:
         print(self.vertex_normals.shape)
 
     def __str__ (self):
-        def stringify (fmt, array):
+        def stringify (fmt, array, f):
             try:
-                return [ fmt%tuple(array[i]) for i in range(array.shape[0]) ]
+                return [ fmt%tuple(f(array[i])) for i in range(array.shape[0]) ]
             except TypeError:
                 print("Failed to stringify with fmt '%s', values with shape %s, first element shape = %s, values = %s"%(
                     fmt, array.shape, array[0].shape, array[0]
                 ))
             return []
 
-        obj_lines = stringify('v %f %f %f', self.quad_verts)
+        obj_lines = stringify('v %f %f %f', self.quad_verts, lambda x: x)
         # obj_lines += stringify('vn %f %f %f', self.quad_normals)
-        obj_lines += stringify('f %d// %d// %d// %d//', self.quad_faces)
+        obj_lines += stringify('f %d// %d// %d// %d//', self.quad_faces, lambda i: i + 1)
         return '\n'.join(obj_lines)
 
         # obj_lines += [ 'v %f %f %f'%tuple(self.quad_verts[i]) for i in range(self.verts) ]
