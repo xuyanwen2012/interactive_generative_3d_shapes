@@ -182,14 +182,13 @@ class CubeMesh:
 
         obj_lines = stringify('v %f %f %f', self.quad_verts, lambda x: x)
         # obj_lines += stringify('vn %f %f %f', self.quad_normals)
-        obj_lines += stringify('f %d// %d// %d// %d//', self.quad_faces, lambda i: i + 1)
-        return '\n'.join(obj_lines)
+        # obj_lines += stringify('f %d// %d// %d// %d//', self.quad_faces, lambda i: i + 1)
+        # return '\n'.join(obj_lines)
 
         # obj_lines += [ 'v %f %f %f'%tuple(self.quad_verts[i]) for i in range(self.verts) ]
-        # self.generate_triangle_faces()
-        # obj_lines =  [ 'v %f %f %f'%tuple(self.verts[i]) for i in range(self.verts.shape[0]) ]
+        self.generate_triangle_faces()
+        obj_lines += stringify('f %d// %d// %d//', self.faces, lambda i: i + 1)
         # obj_lines += [ 'vn %f %f %f'%tuple(self.vertex_normals[i]) for i in range(self.vertex_normals.shape[0]) ]
-        # obj_lines += [ 'f %d// %d// %d//'%tuple(self.faces[i]) for i in range(self.faces.shape[0]) ]
         return '\n'.join(obj_lines)
 
     def generate_triangle_faces (self):
@@ -197,7 +196,7 @@ class CubeMesh:
         for i in range(self.quad_faces.shape[0]):
             a, b, c, d = self.quad_faces[i]
             faces.append([ a, b, c ])
-            # faces.append([ c, d, a ]) 
+            faces.append([ c, d, a ]) 
         self.faces = np.array(faces)
 
     def subdivide (self, vertex_offsets):
