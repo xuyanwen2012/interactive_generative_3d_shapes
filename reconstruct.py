@@ -201,27 +201,49 @@ class CubeMesh:
 
     def subdivide (self, vertex_offsets):
         new_faces, new_normals = [], []
+        new_verts = []
         for i in range(self.quad_faces.shape[0]):
             a, b, c, d = self.quad_faces[i]
 
-            center_vertex = (self.quad_verts[a] + self.quad_verts[b] + self.quad_verts[c] + self.quad_verts[d]) / 4
-            vertex_offset = self.quad_normals[i] * vertex_offsets[i]
+            #     a - e - b
+            #    /   /   /
+            #   h - k - f
+            #  /   /   /
+            # d - g - c
 
-            k = len(self.quad_verts)
-            self.quad_verts.append(center_vertex + vertex_offset)
+            # subdivde
+            e = len(self.quad_verts) + len(new_verts)
+            new_verts.append((self.quad_verts[a] + self.quad_verts[b]) / 2)
+            f = len(self.quad_verts) + len(new_verts)
+            new_verts.append((self.quad_verts[b] + self.quad_verts[c]) / 2)
+            g = len(self.quad_verts) + len(new_verts)
+            new_verts.append((self.quad_verts[c] + self.quad_verts[d]) / 2)
+            h = len(self.quad_verts) + len(new_verts)
+            new_verts.append((self.quad_verts[d] + self.quad_verts[a]) / 2)
+            k = len(self.quad_verts) + len(new_verts)
+            new_verts.append((self.quad_verts[a] + self.quad_verts[b] + self.quad_verts[c] + self.quad_verts[d]) / 4)
 
-            
+            # apply offsets
+            # TBD
+            # self.quad_verts[k] += self.face_normals[i] * vertex_offsets.pop()
 
-
-
-        self.quad_verts, self.quad_normals = new_faces, new_normals
-
-
-
-
-
-
-    # def subdivide_reconstruct (self, vertex_offsets)
+            # interpolate w/ normal from adjacent faces...
+            # TBD
+            # self.quad_verts[e] += 
+            new_faces += [
+                [ a, e, k, h ],
+                [ e, b, f, k ],
+                [ h, k, g, d ],
+                [ k, f, c, g ],
+            ]
+            new_normals += [
+                self.quad_normals[i],
+                self.quad_normals[i],
+                self.quad_normals[i],
+                self.quad_normals[i],
+            ]
+        self.quad_verts = np.array(list(self.quad_verts) + new_verts)
+        self.quad_faces, self.quad_normals = np.array(new_faces), np.array(new_normals)
 
     def subdivide_reconstruct (self, vertex_offsets):
         pass
@@ -231,6 +253,11 @@ def reconstruct_mesh (data):
     enforce(type(data) == np.ndarray, "expected a numpy array, not %s", type(data))
     enforce(len(data.shape) == 1, "expected a 1d array, not shape %s"%(data.shape,))
     cube_mesh = CubeMesh(data[:8 * 3].reshape(8, 3))
+    print(cube_mesh)
+    cube_mesh.subdivide(None)
+    cube_mesh.subdivide(None)
+    cube_mesh.subdivide(None)
+    cube_mesh.subdivide(None)
     print(cube_mesh)
     return str(cube_mesh)
 
