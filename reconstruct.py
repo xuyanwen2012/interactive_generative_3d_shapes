@@ -199,7 +199,43 @@ class CubeMesh:
             faces.append([ c, d, a ]) 
         self.faces = np.array(faces)
 
-    def subdivide (self, vertex_offsets):
+    def subdivide_tris (self):
+        new_faces, new_normals = [], []
+        self.tri_verts = list(self.tri_verts)
+        for i in range(self.tri_faces.shape[0]):
+            a, b, c = self.tri_faces[i]
+            va, vb, vc = self.tri_verts[a], self.tri_verts[b], self.tri_verts[c]
+
+            #     a
+            #    / \
+            #   f - d
+            #  / \ / \
+            # b - e - c
+
+            d = len(self.tri_verts)
+            tri_verts.append((va + vb) / 2)
+            e = len(self.tri_verts)
+            tri_verts.append((vb + vc) / 2)
+            f = len(self.tri_verts)
+            tri_verts.append((vc + vd) / 2)
+            vd, ve, vf = self.tri_verts[d], self.tri_verts[e], self.tri_verts[f]
+
+            new_faces += [
+                [ a, d, f ],
+                [ d, c, e ],
+                [ f, d, e ],
+                [ f, e, b ]
+            ]
+            new_normals += [
+                normalize(cross(vf - va, vd - va)),
+                normalize(cross(vd - vc, ve - vc)),
+                normalize(cross(vf - ve, vd - ve)),
+                normalize(cross(vf - vb, ve - vb)),
+            ]
+        self.tri_verts = np.array(list(self.tri_verts) + new_verts)
+        self.tri_faces, self.tri_normals = np.array(new_faces), np.array(new_normals)
+
+    def subdivide_quads (self, vertex_offsets):
         new_faces, new_normals = [], []
         new_verts = []
         for i in range(self.quad_faces.shape[0]):
